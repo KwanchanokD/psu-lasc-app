@@ -1,6 +1,7 @@
 /* Service Worker — ระบบตรวจติดตามการดำเนินการต่อสัตว์ฯ PSU:LASC
-   กลยุทธ์ network-first: ออนไลน์ใช้ไฟล์ล่าสุดเสมอ, ออฟไลน์ใช้ไฟล์ที่ cache ไว้ */
-const CACHE = 'psu-lasc-ams-v1';
+   - HTML ดึงจากเครือข่ายเสมอ (bypass HTTP cache) เพื่อให้ได้เวอร์ชันล่าสุดทันทีที่อัปโหลดไฟล์ใหม่
+   - ไฟล์อื่นใช้ network-first แล้ว fallback เป็น cache เมื่อออฟไลน์ */
+const CACHE = 'psu-lasc-ams-v2';
 const ASSETS = [
   './',
   './index.html',
@@ -10,9 +11,7 @@ const ASSETS = [
 ];
 
 self.addEventListener('install', (e) => {
-  e.waitUntil(
-    caches.open(CACHE).then((c) => c.addAll(ASSETS)).then(() => self.skipWaiting())
-  );
+  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(ASSETS)));
 });
 
 self.addEventListener('activate', (e) => {
@@ -23,10 +22,18 @@ self.addEventListener('activate', (e) => {
   );
 });
 
+/* หน้าเว็บสั่งให้ service worker ตัวใหม่เริ่มทำงานทันทีเมื่อผู้ใช้กดปุ่มอัปเดต */
+self.addEventListener('message', (e) => {
+  if (e.data === 'SKIP_WAITING') self.skipWaiting();
+});
+
 self.addEventListener('fetch', (e) => {
   if (e.request.method !== 'GET') return;
+  const isHTML = e.request.mode === 'navigate' ||
+    (e.request.headers.get('accept') || '').includes('text/html');
+
   e.respondWith(
-    fetch(e.request)
+    fetch(isHTML ? new Request(e.request.url, { cache: 'reload' }) : e.request)
       .then((res) => {
         const copy = res.clone();
         caches.open(CACHE).then((c) => c.put(e.request, copy)).catch(() => {});

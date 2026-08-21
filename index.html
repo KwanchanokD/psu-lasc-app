@@ -325,11 +325,18 @@
   <div class="logo" id="headerLogo"></div>
   <div>
     <h1>ระบบตรวจติดตามการดำเนินการต่อสัตว์เพื่องานทางวิทยาศาสตร์</h1>
-    <p>PSU:LASC · Laboratory animals Service center — บันทึกข้อมูลโครงการ การนำเข้าสัตว์ และรายงานความผิดปกติจากการตรวจสุขภาพสัตว์ทดลอง</p>
+    <p>PSU:LASC · Laboratory animals Service center — บันทึกข้อมูลโครงการ การนำเข้าสัตว์ และรายงานความผิดปกติจากการตรวจสุขภาพสัตว์ทดลอง
+      <span id="verLabel" style="opacity:.75;font-size:12px;margin-left:6px"></span></p>
   </div>
   <span class="sync-chip" id="syncChip">💾 บันทึกในเครื่อง (ยังไม่เชื่อมต่อไฟล์ OneDrive/SharePoint)</span>
   <button id="installBtn" class="btn small hidden" style="background:#fff;color:var(--primary-dark)" onclick="installApp()">⬇ ติดตั้งแอป</button>
 </header>
+
+<div id="updateBar" class="hidden" style="background:#e2efda;border-bottom:1px solid #a9d08e;padding:10px 28px;font-size:14px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+  <span>🎉 <b>มีแอปเวอร์ชันใหม่พร้อมใช้งาน</b> — กดอัปเดตเพื่อใช้เวอร์ชันล่าสุด (ข้อมูลของคุณไม่หาย)</span>
+  <button class="btn small success" onclick="applyUpdate()">🔄 อัปเดตเดี๋ยวนี้</button>
+  <button class="btn small secondary" onclick="document.getElementById('updateBar').classList.add('hidden')">ภายหลัง</button>
+</div>
 
 <div id="reconnectBar" class="hidden">
   <span id="reconnectMsg"></span>
@@ -343,13 +350,15 @@
   <div id="viewList">
     <div class="card">
       <div class="card-head">
-        <h2>📋 รายการโครงการทั้งหมด</h2>
+        <h2>📋 รายการโครงการทั้งหมด <span id="dbStamp" style="font-weight:400;font-size:12.5px;color:var(--muted)"></span></h2>
         <div class="toolbar-right">
           <button class="btn small success" onclick="connectDataFile()">🔗 เชื่อมต่อไฟล์ข้อมูล OneDrive/SharePoint</button>
           <button class="btn small secondary" onclick="printSummary()">🖨 รายงานสรุปเก็บข้อมูล</button>
           <button class="btn small" onclick="openMonthModal()">📆 รายงานประจำเดือน (คกส.)</button>
           <button class="btn small secondary" onclick="exportData()">⬇ สำรองข้อมูล (JSON)</button>
+          <button class="btn small secondary hidden" id="shareBtn" onclick="shareBackup()">📤 แชร์ไฟล์สำรอง</button>
           <button class="btn small secondary" onclick="document.getElementById('importFile').click()">⬆ นำเข้าข้อมูล</button>
+          <button class="btn small secondary" onclick="checkForUpdate(true)">🔄 ตรวจหาเวอร์ชันใหม่</button>
           <input type="file" id="importFile" accept=".json" class="hidden" onchange="importData(event)">
           <button class="btn small" onclick="showProjectForm()">＋ เพิ่มโครงการใหม่</button>
         </div>
@@ -752,6 +761,7 @@ function load() {
   } catch (e) { db = { projects: [] }; storageOk = false; }
 }
 function persist() {
+  db.updatedAt = new Date().toISOString();
   try { localStorage.setItem(STORE_KEY, JSON.stringify(db)); }
   catch (e) {
     if (storageOk) {
@@ -806,6 +816,8 @@ function switchTab(tab) {
 
 /* ========== Project list ========== */
 function renderList() {
+  document.getElementById('dbStamp').textContent =
+    `· ${db.projects.length} โครงการ · ปรับปรุงล่าสุด ${stampText(db.updatedAt)}`;
   const el = document.getElementById('projectList');
   if (!db.projects.length) {
     el.innerHTML = '<div class="empty-note">ยังไม่มีโครงการในระบบ — กด「เพิ่มโครงการใหม่」เพื่อเริ่มต้น</div>';
@@ -2115,14 +2127,45 @@ function printSummary() {
 }
 
 /* ========== Backup / restore ========== */
+function stampText(iso) {
+  if (!iso) return 'ยังไม่เคยบันทึก';
+  const d = new Date(iso);
+  return `${d.getDate()} ${['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'][d.getMonth()]} ${d.getFullYear() + 543} ` +
+    `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')} น.`;
+}
+
+function backupFileName() {
+  const d = new Date();
+  const pad = (n) => String(n).padStart(2, '0');
+  return `animal-monitoring-backup-${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}.json`;
+}
+
 function exportData() {
   const blob = new Blob([JSON.stringify(db, null, 2)], { type: 'application/json' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  const d = new Date().toISOString().slice(0, 10);
-  a.download = `animal-monitoring-backup-${d}.json`;
+  a.download = backupFileName();
   a.click();
   URL.revokeObjectURL(a.href);
+  toast('ดาวน์โหลดไฟล์สำรองเรียบร้อย');
+}
+
+/* แชร์ไฟล์สำรองผ่านแอปอื่นในมือถือ (OneDrive, LINE, อีเมล) */
+async function shareBackup() {
+  const file = new File([JSON.stringify(db, null, 2)], backupFileName(), { type: 'application/json' });
+  try {
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      await navigator.share({
+        files: [file],
+        title: 'ข้อมูลระบบตรวจติดตามการดำเนินการต่อสัตว์ฯ',
+        text: `ข้อมูล ${db.projects.length} โครงการ · บันทึกล่าสุด ${stampText(db.updatedAt)}`
+      });
+      return;
+    }
+  } catch (e) {
+    if (e && e.name === 'AbortError') return; // ผู้ใช้ยกเลิกเอง
+  }
+  exportData();
 }
 
 function importData(ev) {
@@ -2133,6 +2176,16 @@ function importData(ev) {
     try {
       const data = JSON.parse(reader.result);
       if (!data || !Array.isArray(data.projects)) throw new Error('รูปแบบไฟล์ไม่ถูกต้อง');
+      if (db.updatedAt && data.updatedAt && data.updatedAt < db.updatedAt) {
+        if (!confirm(
+          '⚠ ไฟล์ที่เลือกเก่ากว่าข้อมูลในเครื่องนี้\n\n' +
+          `· ไฟล์ที่เลือก: ${data.projects.length} โครงการ · บันทึกเมื่อ ${stampText(data.updatedAt)}\n` +
+          `· ข้อมูลในเครื่องนี้: ${db.projects.length} โครงการ · บันทึกเมื่อ ${stampText(db.updatedAt)}\n\n` +
+          'หากนำเข้าแล้วเลือกแทนที่ ข้อมูลที่ใหม่กว่าอาจหายไป ยืนยันที่จะดำเนินการต่อหรือไม่?')) {
+          ev.target.value = '';
+          return;
+        }
+      }
       if (!db.projects.length) {
         db = data;
       } else if (confirm(`พบ ${data.projects.length} โครงการในไฟล์\n\n· กด「OK」เพื่อเพิ่มรวมกับข้อมูลเดิม (ข้ามโครงการที่มีเลขที่ซ้ำ)\n· กด「Cancel」เพื่อเลือกแทนที่ข้อมูลทั้งหมด`)) {
@@ -2152,10 +2205,62 @@ function importData(ev) {
   reader.readAsText(file);
 }
 
-/* ========== PWA: install & offline ========== */
+/* ========== PWA: install, update & offline ========== */
+const APP_VERSION = '1.4.0 (21 ส.ค. 2569)';
 let deferredInstall = null;
+let swRegistration = null;
+let reloadingForUpdate = false;
+
+document.getElementById('verLabel').textContent = 'เวอร์ชัน ' + APP_VERSION;
+
+function showUpdateBar() {
+  document.getElementById('updateBar').classList.remove('hidden');
+}
+
+function applyUpdate() {
+  const waiting = swRegistration && swRegistration.waiting;
+  if (waiting) {
+    waiting.postMessage('SKIP_WAITING');   // controllerchange จะสั่ง reload ให้เอง
+  } else {
+    location.reload();
+  }
+}
+
+async function checkForUpdate(manual) {
+  if (!swRegistration) {
+    if (manual) location.reload();
+    return;
+  }
+  try {
+    await swRegistration.update();
+    if (swRegistration.waiting) showUpdateBar();
+    else if (manual) toast('คุณกำลังใช้เวอร์ชันล่าสุดอยู่แล้ว (' + APP_VERSION + ')');
+  } catch (e) {
+    if (manual) toast('ตรวจสอบเวอร์ชันไม่สำเร็จ — กรุณาเชื่อมต่ออินเทอร์เน็ตแล้วลองใหม่');
+  }
+}
+
 if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
-  navigator.serviceWorker.register('sw.js').catch(() => {});
+  navigator.serviceWorker.register('sw.js').then((reg) => {
+    swRegistration = reg;
+    if (reg.waiting && navigator.serviceWorker.controller) showUpdateBar();
+    reg.addEventListener('updatefound', () => {
+      const nw = reg.installing;
+      if (!nw) return;
+      nw.addEventListener('statechange', () => {
+        if (nw.state === 'installed' && navigator.serviceWorker.controller) showUpdateBar();
+      });
+    });
+    // ตรวจหาเวอร์ชันใหม่ทุกครั้งที่กลับมาที่แอป และทุก 30 นาที
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) checkForUpdate(false); });
+    setInterval(() => checkForUpdate(false), 30 * 60 * 1000);
+  }).catch(() => {});
+
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (reloadingForUpdate) return;
+    reloadingForUpdate = true;
+    location.reload();
+  });
 }
 window.addEventListener('beforeinstallprompt', (e) => {
   e.preventDefault();
@@ -2179,6 +2284,12 @@ document.getElementById('headerLogo').innerHTML = logoIMG(50);
 renderDailyChecklist();
 load();
 renderList();
+try {
+  const probe = new File(['{}'], 'probe.json', { type: 'application/json' });
+  if (navigator.canShare && navigator.canShare({ files: [probe] })) {
+    document.getElementById('shareBtn').classList.remove('hidden');
+  }
+} catch (e) {}
 checkStoredHandle();
 </script>
 </body>
