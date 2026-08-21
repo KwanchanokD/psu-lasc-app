@@ -513,6 +513,26 @@
               </label>
             </div>
             <br>
+            <div class="grid grid-3">
+              <label class="field">เพศ
+                <select id="i_sex">
+                  <option value="">— เลือก —</option>
+                  <option>เพศผู้ (Male)</option>
+                  <option>เพศเมีย (Female)</option>
+                  <option>ทั้งสองเพศ (Male/Female)</option>
+                </select>
+              </label>
+              <label class="field">สายพันธุ์
+                <input type="text" id="i_strain" placeholder="เช่น ICR, C57BL/6, Wistar">
+              </label>
+              <label class="field">อายุสัตว์ทดลอง
+                <input type="text" id="i_age" placeholder="เช่น 5 สัปดาห์">
+              </label>
+            </div>
+            <div style="font-size:12.5px;color:var(--muted);margin-top:4px">
+              ℹ️ ระบบเติมค่าจากข้อมูลโครงการให้อัตโนมัติ — แก้ไขได้หากรุ่นนำเข้านี้ต่างจากที่ระบุในโครงการ
+            </div>
+            <br>
             <div class="grid grid-2">
               <label class="field">แหล่งที่มา / ผู้ผลิต
                 <input type="text" id="i_source" placeholder="เช่น Nomura Siam International">
@@ -965,6 +985,7 @@ function openProject(id) {
   document.getElementById('d_info').innerHTML = rows.map(([k, v]) =>
     `<div><div class="info-label">${k}</div><div class="info-value">${esc(v)}</div></div>`).join('');
   renderImports();
+  prefillImportForm();
   renderReports();
   renderDaily();
   renderEthics();
@@ -987,6 +1008,9 @@ function addImport(ev) {
     no: i_no.value.trim(),
     date: i_date.value,
     qty,
+    sex: i_sex.value,
+    strain: i_strain.value.trim(),
+    age: i_age.value.trim(),
     source: i_source.value.trim(),
     note: i_note.value.trim(),
     health: i_health.value,
@@ -997,7 +1021,17 @@ function addImport(ev) {
   persist();
   ev.target.reset();
   renderImports();
+  prefillImportForm();
   toast('เพิ่มรายการนำเข้าเรียบร้อย');
+}
+
+/* เติมค่า เพศ/สายพันธุ์/อายุ ในฟอร์มนำเข้าจากข้อมูลโครงการ */
+function prefillImportForm() {
+  const p = getProject(currentId);
+  if (!p) return;
+  if (!i_sex.value) i_sex.value = p.sex || '';
+  if (!i_strain.value) i_strain.value = p.strain || '';
+  if (!i_age.value) i_age.value = p.age || '';
 }
 
 function endImport(id) {
@@ -1057,12 +1091,13 @@ function renderImports() {
     return;
   }
   el.innerHTML = `<table class="data">
-    <thead><tr><th>เลขที่นำเข้า</th><th>วันที่นำเข้า</th><th>จำนวน (ตัว)</th><th>แหล่งที่มา</th><th>สุขภาพวันนำเข้า</th><th>สถานะการวิจัย</th><th>หมายเหตุ</th><th style="min-width:230px"></th></tr></thead>
+    <thead><tr><th>เลขที่นำเข้า</th><th>วันที่นำเข้า</th><th>จำนวน (ตัว)</th><th>เพศ / สายพันธุ์ / อายุ</th><th>แหล่งที่มา</th><th>สุขภาพวันนำเข้า</th><th>สถานะการวิจัย</th><th>หมายเหตุ</th><th style="min-width:230px"></th></tr></thead>
     <tbody>${imports.map((i, idx) => `
       <tr>
         <td style="white-space:nowrap">${esc(i.no) || (idx + 1)}</td>
         <td style="white-space:nowrap">${thDate(i.date)}</td>
         <td>${esc(i.qty)}</td>
+        <td>${[i.sex, i.strain, i.age].filter(Boolean).map(esc).join(' · ') || '-'}</td>
         <td>${esc(i.source) || '-'}</td>
         <td>${i.health
           ? `<span class="badge ${i.health === 'ปกติทุกตัว' ? 'count' : 'sick'}">${esc(i.health)}</span>`
@@ -1310,6 +1345,9 @@ function buildImportReportHTML(p, im) {
         <tr><th style="width:30%">เลขที่นำเข้า</th><td>${esc(im.no) || '-'}</td></tr>
         <tr><th>วันที่นำเข้า</th><td>${thDate(im.date)}</td></tr>
         <tr><th>จำนวนที่นำเข้า</th><td>${esc(im.qty)} ตัว</td></tr>
+        <tr><th>เพศ</th><td>${esc(im.sex) || esc(p.sex) || '-'}</td></tr>
+        <tr><th>สายพันธุ์</th><td>${esc(im.strain) || esc(p.strain) || '-'}</td></tr>
+        <tr><th>อายุสัตว์ทดลอง</th><td>${esc(im.age) || esc(p.age) || '-'}</td></tr>
         <tr><th>แหล่งที่มา / ผู้ผลิต</th><td>${esc(im.source) || '-'}</td></tr>
         <tr><th>สถานะการวิจัย</th><td>${im.ended ? 'สิ้นสุดการวิจัยแล้ว เมื่อวันที่ ' + thDate(im.ended) : 'อยู่ระหว่างดำเนินการ'}</td></tr>
         <tr><th>หมายเหตุ</th><td>${esc(im.note) || '-'}</td></tr>
@@ -1706,9 +1744,10 @@ function exportMonthlyExcel() {
     const imports = p.imports || [];
     const imported = imports.reduce((s, i) => s + Number(i.qty || 0), 0);
     const importHist = imports.length
-      ? imports.map(i =>
-          `${i.no || '-'} | ${thDate(i.date)} | ${i.qty} ตัว | ${i.source || '-'} | ${i.ended ? 'สิ้นสุดการวิจัย ' + thDate(i.ended) : 'กำลังดำเนินการ'}`
-        ).join('\n')
+      ? imports.map(i => {
+          const spec = [i.sex, i.strain, i.age].filter(Boolean).join(' · ');
+          return `${i.no || '-'} | ${thDate(i.date)} | ${i.qty} ตัว${spec ? ' | ' + spec : ''} | ${i.source || '-'} | ${i.ended ? 'สิ้นสุดการวิจัย ' + thDate(i.ended) : 'กำลังดำเนินการ'}`;
+        }).join('\n')
       : 'ยังไม่มีการนำเข้า';
     const ethicsMonth = (p.ethics || []).filter(x => x.date.startsWith(ym));
     const ethicsText = ethicsMonth.length
@@ -1798,11 +1837,12 @@ function printMonthly() {
     const expired = p.expiry && p.expiry < ym + '-01';
     const importRows = imports.length
       ? `<table class="r-table" style="margin-top:4px">
-          <tr><th>เลขที่นำเข้า</th><th>วันที่นำเข้า</th><th>จำนวน (ตัว)</th><th>แหล่งที่มา</th><th>สถานะการวิจัย</th></tr>
+          <tr><th>เลขที่นำเข้า</th><th>วันที่นำเข้า</th><th>จำนวน (ตัว)</th><th>เพศ / สายพันธุ์ / อายุ</th><th>แหล่งที่มา</th><th>สถานะการวิจัย</th></tr>
           ${imports.map(i => `<tr>
             <td>${esc(i.no) || '-'}</td>
             <td>${thDate(i.date)}</td>
             <td style="text-align:center">${esc(i.qty)}</td>
+            <td>${[i.sex, i.strain, i.age].filter(Boolean).map(esc).join(' · ') || '-'}</td>
             <td>${esc(i.source) || '-'}</td>
             <td>${i.ended ? 'สิ้นสุดการวิจัย ' + thDate(i.ended) : 'กำลังดำเนินการ'}</td>
           </tr>`).join('')}
