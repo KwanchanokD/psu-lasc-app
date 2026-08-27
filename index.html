@@ -265,11 +265,12 @@
   .report-doc .r-photos figcaption { font-size: 12px; margin-top: 3px; }
 
   /* ---------- Month modal ---------- */
-  #monthModal {
+  #monthModal, #loginModal {
     position: fixed; inset: 0; background: rgba(0,0,0,.45);
     display: flex; align-items: center; justify-content: center; z-index: 900; padding: 20px;
   }
-  #monthModal .month-box {
+  #monthModal.hidden, #loginModal.hidden { display: none !important; }
+  #monthModal .month-box, #loginModal .month-box {
     background: #fff; border-radius: 12px; padding: 24px;
     max-width: 420px; width: 100%; box-shadow: 0 10px 40px rgba(0,0,0,.3);
   }
@@ -328,9 +329,43 @@
     <p>PSU:LASC · Laboratory animals Service center — บันทึกข้อมูลโครงการ การนำเข้าสัตว์ และรายงานความผิดปกติจากการตรวจสุขภาพสัตว์ทดลอง
       <span id="verLabel" style="opacity:.75;font-size:12px;margin-left:6px"></span></p>
   </div>
-  <span class="sync-chip" id="syncChip">💾 บันทึกในเครื่อง (ยังไม่เชื่อมต่อไฟล์ OneDrive/SharePoint)</span>
+  <span class="sync-chip" id="cloudChip" style="margin-left:auto">☁ กำลังเชื่อมต่อ…</span>
+  <span class="sync-chip" id="syncChip" style="margin-left:0">💾 บันทึกในเครื่อง (ยังไม่เชื่อมต่อไฟล์ OneDrive/SharePoint)</span>
   <button id="installBtn" class="btn small hidden" style="background:#fff;color:var(--primary-dark)" onclick="installApp()">⬇ ติดตั้งแอป</button>
 </header>
+
+<div id="cloudBar" class="hidden" style="background:#fff4e5;border-bottom:1px solid #f0c987;padding:10px 28px;font-size:14px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+  <span id="cloudBarMsg">☁ <b>ยังไม่ได้เข้าสู่ระบบ</b> — ข้อมูลจะบันทึกเฉพาะในเครื่องนี้ ไม่ซิงก์กับมือถือ/คอมพิวเตอร์เครื่องอื่น</span>
+  <button class="btn small success" onclick="openLogin()">🔑 เข้าสู่ระบบ</button>
+  <button class="btn small secondary" onclick="document.getElementById('cloudBar').classList.add('hidden')">ภายหลัง</button>
+</div>
+
+<div id="loginModal" class="hidden">
+  <div class="month-box">
+    <div style="text-align:center;margin-bottom:10px" id="loginLogo"></div>
+    <h3 style="color:var(--primary-dark);text-align:center;margin-bottom:4px">เข้าสู่ระบบ</h3>
+    <p style="font-size:13px;color:var(--muted);text-align:center;margin-bottom:16px">
+      ใช้อีเมลและรหัสผ่านที่ผู้ดูแลระบบสร้างให้ เพื่อให้ข้อมูลซิงก์ทุกเครื่อง
+    </p>
+    <form onsubmit="doLogin(event)">
+      <label class="field">อีเมล
+        <input type="email" id="lg_email" required autocomplete="username" placeholder="you@psu.ac.th">
+      </label>
+      <br>
+      <label class="field">รหัสผ่าน
+        <input type="password" id="lg_pass" required autocomplete="current-password" placeholder="อย่างน้อย 6 ตัวอักษร">
+      </label>
+      <div id="lg_error" class="hidden" style="margin-top:10px;background:#fdecea;border:1px solid #f5c6cb;color:#9c0006;border-radius:8px;padding:9px 12px;font-size:13.5px"></div>
+      <div class="form-actions">
+        <button type="submit" class="btn success" id="lg_submit">🔑 เข้าสู่ระบบ</button>
+        <button type="button" class="btn secondary" onclick="document.getElementById('loginModal').classList.add('hidden')">ยกเลิก</button>
+      </div>
+    </form>
+    <p style="font-size:12.5px;color:var(--muted);margin-top:10px">
+      ลืมรหัสผ่าน หรือยังไม่มีบัญชี — ติดต่อผู้ดูแลระบบเพื่อสร้าง/รีเซ็ตให้ (สมัครเองไม่ได้)
+    </p>
+  </div>
+</div>
 
 <div id="updateBar" class="hidden" style="background:#e2efda;border-bottom:1px solid #a9d08e;padding:10px 28px;font-size:14px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
   <span>🎉 <b>มีแอปเวอร์ชันใหม่พร้อมใช้งาน</b> — กดอัปเดตเพื่อใช้เวอร์ชันล่าสุด (ข้อมูลของคุณไม่หาย)</span>
@@ -359,6 +394,7 @@
           <button class="btn small secondary hidden" id="shareBtn" onclick="shareBackup()">📤 แชร์ไฟล์สำรอง</button>
           <button class="btn small secondary" onclick="document.getElementById('importFile').click()">⬆ นำเข้าข้อมูล</button>
           <button class="btn small secondary" onclick="checkForUpdate(true)">🔄 ตรวจหาเวอร์ชันใหม่</button>
+          <button class="btn small secondary hidden" id="logoutBtn" onclick="doLogout()">🚪 ออกจากระบบ</button>
           <input type="file" id="importFile" accept=".json" class="hidden" onchange="importData(event)">
           <button class="btn small" onclick="showProjectForm()">＋ เพิ่มโครงการใหม่</button>
         </div>
@@ -624,7 +660,7 @@
               <input type="text" id="r_inspector" placeholder="ชื่อผู้ตรวจสุขภาพสัตว์">
             </label>
             <br>
-            <label class="field">รูปภาพความผิดปกติ (แนบได้สูงสุด 3 รูป — จะแนบหรือไม่ก็ได้)
+            <label class="field">รูปภาพความผิดปกติ (แนบได้สูงสุด 3 รูป — จะแนบหรือไม่ก็ได้ · ระบบย่อขนาดรูปให้อัตโนมัติ)
               <input type="file" id="r_photos" accept="image/*" multiple onchange="handlePhotoSelect(event)">
             </label>
             <div id="photoPreview" class="photo-strip"></div>
@@ -770,6 +806,7 @@ function persist() {
     }
   }
   scheduleFileWrite();
+  if (typeof cloudPush === 'function') cloudPush();
 }
 
 /* ========== Logo (PSU:LASC) ========== */
@@ -959,8 +996,9 @@ function saveProject(ev) {
     persist(); toast('บันทึกการแก้ไขเรียบร้อย');
     openProject(id);
   } else {
-    const p = { id: uid(), imports: [], reports: [], ...data };
+    const p = { id: uid(), createdAt: new Date().toISOString(), imports: [], reports: [], ...data };
     db.projects.unshift(p);
+    currentId = p.id;
     persist(); toast('เพิ่มโครงการเรียบร้อย');
     openProject(p.id);
   }
@@ -971,8 +1009,12 @@ function editProject() { showProjectForm(getProject(currentId)); }
 function deleteProject() {
   const p = getProject(currentId);
   if (!confirm(`ยืนยันการลบโครงการ "${p.projectNo} — ${p.projectName}" ?\nข้อมูลการนำเข้าและรายงานทั้งหมดจะถูกลบด้วย`)) return;
+  const removedId = currentId;
   db.projects = db.projects.filter(x => x.id !== currentId);
-  persist(); toast('ลบโครงการแล้ว'); showList();
+  currentId = null;
+  persist();
+  cloudRemove(removedId);
+  toast('ลบโครงการแล้ว'); showList();
 }
 
 /* ========== Project detail ========== */
@@ -1134,7 +1176,7 @@ function renderImports() {
 const MAX_PHOTOS = 3;
 let selectedPhotos = [];
 
-function compressImage(file, maxDim = 1024, quality = 0.72) {
+function compressImage(file, maxDim = 800, quality = 0.55) {
   return new Promise((resolve, reject) => {
     const img = new Image();
     img.onload = () => {
@@ -2198,15 +2240,188 @@ function importData(ev) {
       } else if (confirm('⚠ ยืนยันแทนที่ข้อมูลทั้งหมดด้วยข้อมูลจากไฟล์? ข้อมูลเดิมจะหายไป')) {
         db = data;
       } else return;
-      persist(); renderList(); toast('นำเข้าข้อมูลเรียบร้อย');
+      persist();
+      cloudPush(db.projects.map(p => p.id));   // นำเข้าแบบกลุ่ม ต้องส่งขึ้นคลาวด์ทุกโครงการ
+      renderList(); toast('นำเข้าข้อมูลเรียบร้อย');
     } catch (e) { alert('ไม่สามารถนำเข้าไฟล์ได้: ' + e.message); }
     ev.target.value = '';
   };
   reader.readAsText(file);
 }
 
+/* ========== Cloud sync (Firebase Realtime Database) ========== */
+window.FIREBASE_CONFIG = {
+  apiKey: "AIzaSyAdC4jcKj8GBEWR1lOFDZQA_Y90M4FXNt8",
+  authDomain: "psu-lasc-animal.firebaseapp.com",
+  databaseURL: "https://psu-lasc-animal-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "psu-lasc-animal",
+  storageBucket: "psu-lasc-animal.firebasestorage.app",
+  messagingSenderId: "726169505667",
+  appId: "1:726169505667:web:a5f7401be7ed1e809f30b6"
+};
+
+let fb = null;            // ฟังก์ชันจาก Firebase SDK
+let cloudUser = null;     // ผู้ใช้ที่ล็อกอินอยู่
+let cloudPushTimer = null;
+let applyingSnapshot = false;   // กันไม่ให้ข้อมูลที่รับมาย้อนกลับขึ้นคลาวด์ซ้ำ
+let firstSyncDone = false;
+
+function setCloudChip(state, text) {
+  const chip = document.getElementById('cloudChip');
+  chip.className = 'sync-chip' + (state ? ' ' + state : '');
+  chip.textContent = text;
+  document.getElementById('logoutBtn').classList.toggle('hidden', !cloudUser);
+}
+
+const APP_URL = 'https://kwanchanokd.github.io/psu-lasc-app/';
+
+function openLogin() {
+  if (location.protocol === 'file:') {
+    alert('⚠ ขณะนี้คุณเปิดแอปจากไฟล์ในเครื่องโดยตรง ซึ่งเข้าสู่ระบบไม่ได้\n\n' +
+          'กรุณาเปิดแอปจากที่อยู่นี้แทน:\n' + APP_URL +
+          '\n\n(กด OK เพื่อเปิดให้อัตโนมัติ)');
+    window.open(APP_URL, '_blank');
+    return;
+  }
+  document.getElementById('lg_error').classList.add('hidden');
+  document.getElementById('lg_pass').value = '';
+  document.getElementById('loginModal').classList.remove('hidden');
+  setTimeout(() => document.getElementById('lg_email').focus(), 50);
+}
+
+const LOGIN_ERRORS = {
+  'auth/invalid-email': 'รูปแบบอีเมลไม่ถูกต้อง',
+  'auth/user-not-found': 'ไม่พบบัญชีนี้ในระบบ — ติดต่อผู้ดูแลระบบเพื่อสร้างบัญชีให้',
+  'auth/wrong-password': 'รหัสผ่านไม่ถูกต้อง',
+  'auth/invalid-credential': 'อีเมลหรือรหัสผ่านไม่ถูกต้อง',
+  'auth/user-disabled': 'บัญชีนี้ถูกระงับการใช้งาน',
+  'auth/too-many-requests': 'ลองผิดหลายครั้งเกินไป กรุณารอสักครู่แล้วลองใหม่',
+  'auth/network-request-failed': 'เชื่อมต่ออินเทอร์เน็ตไม่ได้ กรุณาตรวจสอบสัญญาณ'
+};
+
+async function doLogin(ev) {
+  ev.preventDefault();
+  if (!fb) return;
+  const btn = document.getElementById('lg_submit');
+  const errBox = document.getElementById('lg_error');
+  btn.disabled = true; btn.textContent = 'กำลังเข้าสู่ระบบ…';
+  errBox.classList.add('hidden');
+  try {
+    await fb.signIn(fb.auth, lg_email.value.trim(), lg_pass.value);
+    document.getElementById('loginModal').classList.add('hidden');
+  } catch (e) {
+    let msg = LOGIN_ERRORS[e.code];
+    if (!msg && (e.name === 'SecurityError' || e.code === 18)) {
+      msg = 'เบราว์เซอร์บล็อกการเข้าสู่ระบบ — กรุณาเปิดแอปจาก ' + APP_URL +
+            ' (ไม่ใช่เปิดไฟล์ในเครื่อง) และอย่าใช้โหมดไม่ระบุตัวตน';
+    }
+    errBox.textContent = msg || ('เข้าสู่ระบบไม่สำเร็จ: ' + (e.code || e.name || '') + ' ' + (e.message || ''));
+    errBox.classList.remove('hidden');
+  } finally {
+    btn.disabled = false; btn.textContent = '🔑 เข้าสู่ระบบ';
+    lg_pass.value = '';
+  }
+}
+
+async function doLogout() {
+  if (!fb || !cloudUser) return;
+  if (!confirm('ออกจากระบบ?\n\nข้อมูลที่ซิงก์แล้วยังอยู่ในเครื่องนี้ แต่จะหยุดซิงก์กับเครื่องอื่นจนกว่าจะเข้าสู่ระบบใหม่')) return;
+  await fb.signOut(fb.auth);
+}
+
+/* รับข้อมูลจากคลาวด์มาแทนที่ข้อมูลในเครื่อง */
+function applyCloudSnapshot(remote) {
+  applyingSnapshot = true;
+  try {
+    const list = remote ? Object.values(remote) : [];
+    list.sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
+    db.projects = list;
+    try { localStorage.setItem(STORE_KEY, JSON.stringify(db)); } catch (e) {}
+    if (currentId && getProject(currentId)) openProject(currentId);
+    else if (currentId) showList();
+    else renderList();
+  } finally {
+    applyingSnapshot = false;
+  }
+}
+
+/* ส่งข้อมูลขึ้นคลาวด์ (หน่วงเล็กน้อยเพื่อไม่ให้เขียนถี่เกินไป) */
+function cloudPush(projectIds) {
+  if (!fb || !cloudUser || applyingSnapshot) return;
+  const ids = projectIds || (currentId ? [currentId] : db.projects.map(p => p.id));
+  clearTimeout(cloudPushTimer);
+  cloudPushTimer = setTimeout(async () => {
+    try {
+      setCloudChip('', '☁ กำลังบันทึกขึ้นคลาวด์…');
+      for (const id of ids) {
+        const p = getProject(id);
+        if (p) await fb.set(fb.ref(fb.rtdb, 'data/projects/' + id), p);
+      }
+      await fb.set(fb.ref(fb.rtdb, 'data/updatedAt'), new Date().toISOString());
+      setCloudChip('ok', '☁ ซิงก์แล้ว · ' + (cloudUser.email || ''));
+    } catch (e) {
+      setCloudChip('err', '⚠ บันทึกขึ้นคลาวด์ไม่สำเร็จ — ข้อมูลยังอยู่ในเครื่อง');
+    }
+  }, 700);
+}
+
+async function cloudRemove(id) {
+  if (!fb || !cloudUser) return;
+  try { await fb.remove(fb.ref(fb.rtdb, 'data/projects/' + id)); } catch (e) {}
+}
+
+/* เรียกโดย module script เมื่อโหลด Firebase SDK เสร็จ */
+window.onFirebaseReady = function (api) {
+  fb = api;
+  if (location.protocol === 'file:') {
+    setCloudChip('err', '⚠ เปิดจากไฟล์ในเครื่อง — ซิงก์คลาวด์ไม่ได้');
+    document.getElementById('cloudBarMsg').innerHTML =
+      '⚠ <b>คุณเปิดแอปจากไฟล์ในเครื่อง</b> — เข้าสู่ระบบและซิงก์ข้อมูลไม่ได้ ' +
+      'กรุณาเปิดจาก <a href="' + APP_URL + '" style="color:var(--primary-dark)"><b>' + APP_URL + '</b></a> แทน';
+    document.getElementById('cloudBar').classList.remove('hidden');
+    return;
+  }
+  setCloudChip('', '☁ ยังไม่ได้เข้าสู่ระบบ');
+  fb.onAuthStateChanged(fb.auth, async (user) => {
+    cloudUser = user;
+    if (!user) {
+      firstSyncDone = false;
+      setCloudChip('', '☁ ยังไม่ได้เข้าสู่ระบบ');
+      document.getElementById('cloudBar').classList.remove('hidden');
+      return;
+    }
+    document.getElementById('cloudBar').classList.add('hidden');
+    setCloudChip('', '☁ กำลังซิงก์ข้อมูล…');
+    try {
+      const snap = await fb.get(fb.ref(fb.rtdb, 'data/projects'));
+      const remote = snap.exists() ? snap.val() : null;
+      const remoteIds = new Set(remote ? Object.keys(remote) : []);
+      const localOnly = db.projects.filter(p => !remoteIds.has(p.id));
+      if (localOnly.length) {
+        // ครั้งแรกที่ล็อกอิน: อัปโหลดโครงการที่มีเฉพาะในเครื่องนี้ขึ้นคลาวด์ (ไม่ทับของเดิม)
+        for (const p of localOnly) await fb.set(fb.ref(fb.rtdb, 'data/projects/' + p.id), p);
+        toast(`อัปโหลดข้อมูลในเครื่อง ${localOnly.length} โครงการขึ้นคลาวด์เรียบร้อย`);
+      }
+      // ติดตามการเปลี่ยนแปลงแบบเรียลไทม์
+      fb.onValue(fb.ref(fb.rtdb, 'data/projects'), (s) => {
+        applyCloudSnapshot(s.exists() ? s.val() : null);
+        setCloudChip('ok', '☁ ซิงก์แล้ว · ' + (user.email || ''));
+        if (!firstSyncDone) {
+          firstSyncDone = true;
+          toast('เชื่อมต่อคลาวด์แล้ว — ข้อมูลจะซิงก์ทุกเครื่องอัตโนมัติ');
+        }
+      }, () => {
+        setCloudChip('err', '⚠ บัญชีนี้ยังไม่ได้รับสิทธิ์เข้าถึงข้อมูล');
+        alert('บัญชีนี้เข้าสู่ระบบได้ แต่ยังไม่ได้รับสิทธิ์เข้าถึงข้อมูล\n\nกรุณาแจ้งผู้ดูแลระบบให้เพิ่ม User UID ของคุณไว้ใต้ allowed ในฐานข้อมูล');
+      });
+    } catch (e) {
+      setCloudChip('err', '⚠ เชื่อมต่อคลาวด์ไม่สำเร็จ');
+    }
+  });
+};
+
 /* ========== PWA: install, update & offline ========== */
-const APP_VERSION = '1.4.0 (21 ส.ค. 2569)';
+const APP_VERSION = '1.5.1 (21 ส.ค. 2569)';
 let deferredInstall = null;
 let swRegistration = null;
 let reloadingForUpdate = false;
@@ -2281,6 +2496,7 @@ async function installApp() {
 
 /* ========== Init ========== */
 document.getElementById('headerLogo').innerHTML = logoIMG(50);
+document.getElementById('loginLogo').innerHTML = logoIMG(70);
 renderDailyChecklist();
 load();
 renderList();
@@ -2291,6 +2507,38 @@ try {
   }
 } catch (e) {}
 checkStoredHandle();
+</script>
+
+<script type="module">
+/* โหลด Firebase SDK แล้วส่งฟังก์ชันที่ต้องใช้กลับไปให้สคริปต์หลัก */
+(async () => {
+  const cfg = window.FIREBASE_CONFIG;
+  if (!cfg || !cfg.apiKey || !cfg.databaseURL) return;   // ยังไม่ได้ตั้งค่า = ใช้งานแบบเก็บในเครื่องอย่างเดียว
+  const V = 'https://www.gstatic.com/firebasejs/10.12.5/';
+  try {
+    const [appMod, authMod, dbMod] = await Promise.all([
+      import(V + 'firebase-app.js'),
+      import(V + 'firebase-auth.js'),
+      import(V + 'firebase-database.js')
+    ]);
+    const app = appMod.initializeApp(cfg);
+    const auth = authMod.getAuth(app);
+    // จำการเข้าสู่ระบบไว้ — ถ้าเบราว์เซอร์ไม่อนุญาต (เช่นเปิดจากไฟล์ในเครื่อง) ให้ทำงานต่อได้
+    try { await authMod.setPersistence(auth, authMod.browserLocalPersistence); } catch (e) {}
+    window.onFirebaseReady({
+      auth,
+      rtdb: dbMod.getDatabase(app),
+      signIn: authMod.signInWithEmailAndPassword,
+      signOut: authMod.signOut,
+      onAuthStateChanged: authMod.onAuthStateChanged,
+      ref: dbMod.ref, set: dbMod.set, get: dbMod.get,
+      onValue: dbMod.onValue, remove: dbMod.remove
+    });
+  } catch (e) {
+    const chip = document.getElementById('cloudChip');
+    if (chip) { chip.className = 'sync-chip err'; chip.textContent = '⚠ โหลดระบบคลาวด์ไม่สำเร็จ (ใช้งานแบบออฟไลน์ได้ตามปกติ)'; }
+  }
+})();
 </script>
 </body>
 </html>

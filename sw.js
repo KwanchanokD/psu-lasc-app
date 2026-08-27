@@ -40,7 +40,12 @@ self.addEventListener('fetch', (e) => {
         return res;
       })
       .catch(() =>
-        caches.match(e.request).then((res) => res || caches.match('./index.html'))
+        caches.match(e.request).then((res) => {
+          if (res) return res;
+          // ใช้หน้าหลักสำรองเฉพาะการเปิดหน้าเว็บเท่านั้น ไม่ใช้กับไฟล์สคริปต์ภายนอก
+          if (isHTML) return caches.match('./index.html');
+          return Response.error();
+        })
       )
   );
 });
