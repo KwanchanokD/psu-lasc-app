@@ -1,14 +1,13 @@
-/* Service Worker — ระบบออกใบเสนอราคาอัตโนมัติ PSU:LASC
+/* Service Worker — ระบบตรวจติดตามการดำเนินการต่อสัตว์ฯ PSU:LASC
    - HTML ดึงจากเครือข่ายเสมอ (bypass HTTP cache) เพื่อให้ได้เวอร์ชันล่าสุดทันทีที่อัปโหลดไฟล์ใหม่
    - ไฟล์อื่นใช้ network-first แล้ว fallback เป็น cache เมื่อออฟไลน์ */
-const CACHE = 'psu-lasc-qt-v4';
+const CACHE = 'psu-lasc-ams-v2';
 const ASSETS = [
   './',
   './index.html',
   './manifest.webmanifest',
   './icon-192.png',
-  './icon-512.png',
-  './logo-lasc.png'
+  './icon-512.png'
 ];
 
 self.addEventListener('install', (e) => {
@@ -30,7 +29,6 @@ self.addEventListener('message', (e) => {
 
 self.addEventListener('fetch', (e) => {
   if (e.request.method !== 'GET') return;
-
   const isHTML = e.request.mode === 'navigate' ||
     (e.request.headers.get('accept') || '').includes('text/html');
 
@@ -44,6 +42,7 @@ self.addEventListener('fetch', (e) => {
       .catch(() =>
         caches.match(e.request).then((res) => {
           if (res) return res;
+          // ใช้หน้าหลักสำรองเฉพาะการเปิดหน้าเว็บเท่านั้น ไม่ใช้กับไฟล์สคริปต์ภายนอก
           if (isHTML) return caches.match('./index.html');
           return Response.error();
         })
