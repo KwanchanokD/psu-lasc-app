@@ -288,6 +288,8 @@
       <span id="verLabel" style="opacity:.75;font-size:12px;margin-left:6px"></span></p>
   </div>
   <span class="sync-chip" id="cloudChip" style="margin-left:auto">☁ กำลังเชื่อมต่อ…</span>
+  <button id="updateBtn" class="btn sm" style="background:#fff;color:var(--primary-dark)"
+          title="ตรวจหาเวอร์ชันใหม่ และล้างแคชของแอปเพื่อโหลดไฟล์ล่าสุด" onclick="updateNow()">🔄 อัปเดต</button>
   <button id="logoutBtn" class="btn sm hidden" style="background:#fff;color:var(--primary-dark)" onclick="doLogout()">🚪 ออกจากระบบ</button>
   <button id="installBtn" class="btn sm hidden" style="background:#fff;color:var(--primary-dark)"
           onclick="installApp()">⬇ ติดตั้งแอป</button>
@@ -776,7 +778,7 @@
          สำหรับ iPhone/iPad ให้ใช้ปุ่มแชร์ <b>⎋</b> ของ Safari แล้วเลือก <b>“เพิ่มไปยังหน้าจอโฮม”</b></p>
       <div class="btn-row" style="margin-top:12px">
         <a class="btn secondary" href="วิธีติดตั้งแอป.html" target="_blank">📖 เปิดคู่มือการติดตั้งฉบับเต็ม</a>
-        <button class="btn ghost" onclick="checkForUpdate(true)">🔄 ตรวจหาเวอร์ชันใหม่</button>
+        <button class="btn ghost" onclick="updateNow()">🔄 ตรวจหาเวอร์ชันใหม่</button>
       </div>
       <p class="muted" style="font-size:12.5px;margin-top:10px">
         เปิดจากไฟล์ในเครื่องโดยตรง (ดับเบิลคลิก index.html) ใช้งานได้ครบทุกฟังก์ชัน แต่จะไม่มีปุ่มติดตั้ง
@@ -2243,7 +2245,7 @@ function onCloudDenied() {
 }
 
 /* ================= PWA: ติดตั้งลงเครื่อง / อัปเดตเวอร์ชัน / ใช้งานออฟไลน์ ================= */
-const APP_VERSION = '1.2.0 (27 ส.ค. 2569)';
+const APP_VERSION = '1.2.1 (27 ส.ค. 2569)';
 let deferredInstall = null;
 let swRegistration = null;
 let reloadingForUpdate = false;
@@ -2254,6 +2256,28 @@ function applyUpdate() {
   const waiting = swRegistration && swRegistration.waiting;
   if (waiting) waiting.postMessage('SKIP_WAITING');   // controllerchange จะสั่ง reload ให้เอง
   else location.reload();
+}
+
+/* ปุ่ม 🔄 อัปเดต — บังคับให้ได้ไฟล์เวอร์ชันล่าสุดแน่ ๆ
+   ลำดับ: ใช้ตัวที่ดาวน์โหลดรออยู่ → ตรวจหาใหม่จากเซิร์ฟเวอร์ → ล้างแคชของแอปแล้วโหลดใหม่
+   (ล้างเฉพาะแคชไฟล์หน้าเว็บ ไม่แตะข้อมูลใบเสนอราคาที่บันทึกไว้) */
+async function updateNow() {
+  if (curItems.length && !editingId &&
+      !confirm('ตรวจหาเวอร์ชันใหม่และโหลดหน้าใหม่?\n\nใบเสนอราคาที่กำลังกรอกอยู่แต่ยังไม่ได้กดบันทึกจะหายไป')) return;
+
+  if (swRegistration && swRegistration.waiting) { applyUpdate(); return; }
+  toast('กำลังตรวจหาเวอร์ชันใหม่…');
+  if (swRegistration) {
+    try { await swRegistration.update(); } catch (e) {}
+    if (swRegistration.waiting) { applyUpdate(); return; }
+  }
+  try {
+    if (window.caches) {
+      const keys = await caches.keys();
+      await Promise.all(keys.map(k => caches.delete(k)));
+    }
+  } catch (e) {}
+  location.reload();
 }
 
 async function checkForUpdate(manual) {
