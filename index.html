@@ -417,7 +417,7 @@
 
   <div class="card">
     <div class="card-head"><h2>3) ข้อมูลโครงการและสัตว์ทดลอง</h2>
-      <span class="hint">ใช้เป็นฐานคำนวณจำนวนกรงและจำนวนวันเลี้ยงอัตโนมัติ</span></div>
+      <span class="hint">ใช้เป็นฐานคำนวณจำนวนวันเลี้ยงและจำนวนหน่วยอัตโนมัติ</span></div>
     <div class="card-body">
       <div class="grid grid-2">
         <label class="field">ชื่อโครงการ / ขอบเขตงาน <span class="req">*</span>
@@ -434,24 +434,14 @@
         <label class="field">จำนวนสัตว์ (ตัว)
           <input type="number" id="qAnimals" min="0" step="1" value="0" oninput="recalcHelper()">
         </label>
-        <label class="field">จำนวนตัว/กรง
-          <small id="densityHint">ตามมาตรฐานพื้นที่ขั้นต่ำ</small>
-          <input type="number" id="qPerCage" min="1" step="1" value="5" oninput="recalcHelper()">
-        </label>
-        <label class="field">จำนวนกรง (คำนวณ)
-          <input id="qCages" readonly>
-        </label>
         <label class="field">วันที่เริ่มเลี้ยง
           <input type="date" id="qStart" onchange="recalcHelper()">
         </label>
         <label class="field">วันที่สิ้นสุด
           <input type="date" id="qEnd" onchange="recalcHelper()">
         </label>
-        <label class="field">วันปรับสภาพ (Acclimatization)
-          <small>มาตรฐานทั่วไป 5–7 วัน</small>
-          <input type="number" id="qAcc" min="0" step="1" value="7" oninput="recalcHelper()">
-        </label>
-        <label class="field">จำนวนวันเลี้ยงรวม
+        <label class="field">จำนวนวันเลี้ยง (คำนวณ)
+          <small>นับรวมวันเริ่มและวันสิ้นสุด</small>
           <input id="qDays" readonly>
         </label>
       </div>
@@ -465,7 +455,7 @@
       <span class="hint">เลือกรายการที่ใช้ แล้วกดสร้าง ระบบจะคิดจำนวนหน่วยและราคาให้เอง</span>
     </div>
     <div class="card-body">
-      <div class="sec-title">ก. ค่าเลี้ยงและดูแลสัตว์ทดลอง (คิดตามกรง-วัน / ตัว-วัน)</div>
+      <div class="sec-title">ก. ค่าเลี้ยงและดูแลสัตว์ทดลอง (คิดตามตัว-วัน)</div>
       <div id="autoHusbandry" class="grid grid-2"></div>
       <div class="sec-title">ข. หัตถการ งานสัตวแพทย์ และบริการอื่น</div>
       <div id="autoProcedures" class="grid grid-2"></div>
@@ -626,8 +616,8 @@
         </table>
       </div>
       <p class="muted" style="font-size:12.5px;margin-top:10px">
-        <b>ฐานคำนวณ</b> — <code>cageDay</code> = จำนวนกรง × จำนวนวัน · <code>animalDay</code> = จำนวนตัว × จำนวนวัน ·
-        <code>animal</code> = จำนวนตัว · <code>perUse</code> = จำนวนครั้ง (กรอกเอง) · <code>fixed</code> = เหมาจ่าย 1 หน่วย<br>
+        <b>ฐานคำนวณ</b> — <code>animalDay</code> = จำนวนตัว × จำนวนวัน · <code>animal</code> = จำนวนตัว ·
+        <code>perUse</code> = จำนวนครั้ง (กรอกเอง) · <code>fixed</code> = เหมาจ่าย 1 หน่วย<br>
         <b>แสดงในตัวช่วย</b> — เลือกว่ารายการนี้จะไปโผล่ในกล่องติ๊กเลือกของขั้นตอนที่ 4 หมวดใด (หรือไม่แสดงเลย แต่ยังเลือกเพิ่มเองได้จากช่อง “เพิ่มจากอัตรา”)<br>
         <b>เฉพาะชนิดสัตว์</b> — ใส่รหัสชนิดสัตว์คั่นด้วยจุลภาค เช่น <code id="spKeyHint">mouse,rat</code> ระบบจะติ๊กให้อัตโนมัติเมื่อเลือกสัตว์ชนิดนั้น · เว้นว่าง = ใช้ได้ทุกชนิด
       </p>
@@ -658,9 +648,9 @@
   </div>
 
   <div class="card">
-    <div class="card-head"><h2>ชนิดสัตว์ทดลอง และเกณฑ์ความหนาแน่นต่อกรง</h2>
+    <div class="card-head"><h2>ชนิดสัตว์ทดลอง</h2>
       <div class="btn-row">
-        <span class="hint">ค่า “ตัว/กรง” ใช้คำนวณจำนวนกรงอัตโนมัติ</span>
+        <span class="hint">ใช้เป็นตัวเลือกในขั้นตอนที่ 3 และผูกกับอัตราค่าบริการ</span>
         <button class="btn secondary sm" onclick="addSpecies()">+ เพิ่มชนิดสัตว์</button>
       </div>
     </div>
@@ -668,7 +658,7 @@
       <div class="tbl-wrap"><table class="tbl">
         <thead><tr>
           <th style="width:110px">รหัส (key)</th><th style="width:230px">ชื่อที่แสดง</th>
-          <th style="width:88px">ตัว/กรง</th><th>หมายเหตุมาตรฐานพื้นที่ขั้นต่ำ</th>
+          <th>หมายเหตุ / เกณฑ์มาตรฐานที่เกี่ยวข้อง</th>
           <th style="width:110px">ลำดับ</th><th style="width:44px"></th>
         </tr></thead>
         <tbody id="speciesBody"></tbody>
@@ -764,7 +754,6 @@
           <label class="field">ตำแหน่ง<input id="sPreparerPos"></label>
           <label class="field">ผู้อนุมัติ (ค่าตั้งต้น)<input id="sApprover"></label>
           <label class="field">ตำแหน่ง<input id="sApproverPos"></label>
-          <label class="field">วันปรับสภาพตั้งต้น (วัน)<input type="number" id="sAccDays" min="0"></label>
           <label class="field">พิมพ์สำเนาพร้อมต้นฉบับ
             <select id="sPrintCopy"><option value="yes">พิมพ์ 2 ฉบับ (ต้นฉบับ + สำเนา)</option><option value="no">พิมพ์เฉพาะต้นฉบับ</option></select>
           </label>
@@ -803,9 +792,9 @@
         <li><b>ตั้งค่าครั้งแรก</b> — ไปที่แท็บ <b>ตั้งค่าระบบ</b> กรอกข้อมูลหน่วยงาน ผู้ลงนาม รูปแบบเลขที่ และจำนวนวันยืนราคา แล้วกดบันทึก</li>
         <li><b>ปรับอัตราค่าบริการ</b> — ไปที่แท็บ <b>อัตราค่าบริการ</b> แก้ตัวเลขให้ตรงกับประกาศของศูนย์ฯ ที่มีผลบังคับใช้ พร้อมระบุเลขที่ประกาศและวันที่มีผล
             · เพิ่มบริการใหม่ด้วยปุ่ม <b>+ เพิ่มอัตรา</b> แล้วกำหนดหน่วย ฐานคำนวณ และชั้นอัตราทั้ง 3 ชั้น</li>
-        <li><b>ดูแลข้อมูลหลัก</b> — แท็บ <b>ข้อมูลหลัก</b> ใช้เพิ่ม/แก้/ลบ <i>ประเภทบริการ</i>, <i>ชนิดสัตว์ทดลองและจำนวนตัวต่อกรง</i> และ <i>หมวดของอัตรา</i>
+        <li><b>ดูแลข้อมูลหลัก</b> — แท็บ <b>ข้อมูลหลัก</b> ใช้เพิ่ม/แก้/ลบ <i>ประเภทบริการ</i>, <i>ชนิดสัตว์ทดลอง</i> และ <i>หมวดของอัตรา</i>
             ทุกอย่างจะไปอัปเดตตัวเลือกในหน้าออกใบเสนอราคาให้เองทันที</li>
-        <li><b>กรอกคำขอ</b> — แท็บ <b>ออกใบเสนอราคา</b> กรอกข้อมูลลูกค้า โครงการ ชนิดสัตว์ จำนวนตัว ช่วงวันที่ และวันปรับสภาพ ระบบคำนวณจำนวนกรงและจำนวนวันให้อัตโนมัติ</li>
+        <li><b>กรอกคำขอ</b> — แท็บ <b>ออกใบเสนอราคา</b> กรอกข้อมูลลูกค้า โครงการ ชนิดสัตว์ จำนวนตัว และช่วงวันที่เลี้ยง ระบบคำนวณจำนวนวันและจำนวนตัว-วันให้อัตโนมัติ</li>
         <li><b>สร้างรายการอัตโนมัติ</b> — ติ๊กเลือกรายการค่าเลี้ยงและหัตถการที่ใช้ กด <b>สร้างรายการอัตโนมัติ</b> ระบบจะใส่จำนวนหน่วยและราคาตามชั้นอัตราของผู้รับบริการให้เอง (แก้ไขรายแถวได้)</li>
         <li><b>บันทึกและออกเลขที่</b> — กด <b>บันทึกและออกเลขที่</b> ระบบออกเลขที่ใบเสนอราคาแบบเรียงลำดับไม่ซ้ำ และเก็บลงทะเบียนในเครื่อง</li>
         <li><b>พิมพ์และเชื่อมทะเบียน</b> — กด <b>พิมพ์ / บันทึกเป็น PDF</b> เพื่อออกเอกสาร A4 (ต้นฉบับ + สำเนา) และกด <b>คัดลอกแถวสำหรับทะเบียน SERVICE</b> เพื่อนำไปวางในไฟล์ <i>ระบบรับบริการวิจัยและทดสอบ</i></li>
@@ -839,7 +828,7 @@
           <li>เอกสารระบบคุณภาพภายในของศูนย์ฯ — PSU-LASC/SOP MN-012 (การออกเลขที่เอกสารและ Study No.) และ S.MN-008/F-01 (แบบบันทึกรายละเอียดโครงการ)</li>
         </ul></div>
       </details>
-      <details class="ref"><summary>3. พื้นที่ขั้นต่ำต่อสัตว์ 1 ตัว — ใช้ตรวจสอบความหนาแน่นต่อกรง</summary>
+      <details class="ref"><summary>3. พื้นที่ขั้นต่ำต่อสัตว์ 1 ตัว (ใช้อ้างอิงการจัดสภาพการเลี้ยง)</summary>
         <div>
           <p class="muted" style="margin-bottom:8px">อ้างอิง Guide for the Care and Use of Laboratory Animals, 8th ed. — โปรดตรวจสอบกับฉบับที่มีผลบังคับใช้ในปัจจุบันก่อนใช้อ้างอิงในเอกสารสัญญา</p>
           <div class="tbl-wrap"><table class="tbl">
@@ -865,7 +854,7 @@
           </table></div>
         </div>
       </details>
-      <details class="ref"><summary>4. องค์ประกอบต้นทุนที่ควรสะท้อนในอัตราค่าเลี้ยงต่อกรง-วัน</summary>
+      <details class="ref"><summary>4. องค์ประกอบต้นทุนที่ควรสะท้อนในอัตราค่าเลี้ยงต่อตัว-วัน</summary>
         <div><ul class="plain">
           <li>ค่าอาหารสัตว์ทดลองเกรดมาตรฐาน และน้ำดื่มที่ผ่านการฆ่าเชื้อ</li>
           <li>วัสดุรองนอน วัสดุเสริมสภาวะแวดล้อม (environmental enrichment) และวัสดุสิ้นเปลืองประจำกรง</li>
@@ -935,31 +924,30 @@ const DEFAULT_SETTINGS = {
   tiers: ['ภายในมหาวิทยาลัย (นักวิจัย ม.อ.)', 'หน่วยงานภาครัฐ / สถาบันการศึกษา', 'ภาคเอกชน / บุคคลทั่วไป'],
   preparer: '', preparerPos: 'เจ้าหน้าที่ศูนย์บริการสัตว์ทดลอง',
   approver: '', approverPos: 'ผู้อำนวยการศูนย์บริการสัตว์ทดลอง',
-  accDays: 7,
   printCopy: 'yes',
   terms: [
     'ใบเสนอราคานี้ยืนราคาตามวันที่ระบุ และเป็นราคาโดยประมาณจากข้อมูลที่ผู้ขอรับบริการแจ้ง',
     'อัตราค่าบริการเป็นไปตามประกาศอัตราค่าบริการของศูนย์บริการสัตว์ทดลองที่มีผลบังคับใช้',
     'การให้บริการจะเริ่มได้เมื่อโครงการได้รับการรับรองจากคณะกรรมการกำกับดูแลการเลี้ยงและใช้สัตว์ของสถาบัน (IACUC) และมีเลขที่ใบอนุญาตใช้สัตว์ฯ ครบถ้วนแล้ว',
     'ผู้ขอรับบริการต้องส่งเอกสารประกอบให้ครบ ได้แก่ โครงร่างการวิจัย เอกสารรับรอง IACUC และเอกสารสารทดสอบ (CoA/SDS) ก่อนเริ่มงาน',
-    'ค่าบริการเลี้ยงสัตว์คิดตามจำนวนกรง-วันจริง รวมระยะปรับสภาพสัตว์ หากระยะเวลาเลี้ยงจริงเปลี่ยนแปลง ศูนย์ฯ จะปรับยอดตามการใช้บริการจริง',
+    'ค่าบริการเลี้ยงสัตว์คิดตามจำนวนตัว-วันจริง หากจำนวนสัตว์หรือระยะเวลาเลี้ยงจริงเปลี่ยนแปลง ศูนย์ฯ จะปรับยอดตามการใช้บริการจริง',
     'ราคานี้ยังไม่รวมค่าสัตว์ทดลอง ค่าขนส่งสัตว์ และค่าสารทดสอบ เว้นแต่ระบุไว้เป็นรายการในใบเสนอราคา',
     'กำหนดชำระเงินภายใน 30 วันนับจากวันที่ได้รับใบแจ้งหนี้ โดยโอนเข้าบัญชีที่ศูนย์ฯ แจ้ง',
     'กรณียกเลิกงานหลังเริ่มให้บริการแล้ว ศูนย์ฯ ขอสงวนสิทธิ์เรียกเก็บค่าใช้จ่ายตามที่เกิดขึ้นจริง'
   ].join('\n')
 };
 
-/* ฐานคำนวณ: cageDay = กรง x วัน, animalDay = ตัว x วัน, animal = ตัว, perUse = จำนวนครั้ง, fixed = 1 หน่วย */
+/* ฐานคำนวณ: animalDay = ตัว x วัน, animal = ตัว, perUse = จำนวนครั้ง, fixed = 1 หน่วย */
 const DEFAULT_RATES = [
-  { code:'HB-01', cat:'ก. ค่าเลี้ยงและดูแลสัตว์ทดลอง', name:'ค่าเลี้ยงและดูแลหนูเมาส์ — กรงมาตรฐาน (open cage)', unit:'กรง-วัน', basis:'cageDay', r:[15,20,25], auto:'husbandry', species:['mouse'] },
-  { code:'HB-02', cat:'ก. ค่าเลี้ยงและดูแลสัตว์ทดลอง', name:'ค่าเลี้ยงและดูแลหนูเมาส์ — ระบบกรงระบายอากาศเฉพาะ (IVC)', unit:'กรง-วัน', basis:'cageDay', r:[20,26,32], auto:'husbandry', species:['mouse'] },
-  { code:'HB-03', cat:'ก. ค่าเลี้ยงและดูแลสัตว์ทดลอง', name:'ค่าเลี้ยงและดูแลหนูแรท — กรงมาตรฐาน (open cage)', unit:'กรง-วัน', basis:'cageDay', r:[20,26,33], auto:'husbandry', species:['rat'] },
-  { code:'HB-04', cat:'ก. ค่าเลี้ยงและดูแลสัตว์ทดลอง', name:'ค่าเลี้ยงและดูแลหนูแรท — ระบบกรงระบายอากาศเฉพาะ (IVC)', unit:'กรง-วัน', basis:'cageDay', r:[26,34,42], auto:'husbandry', species:['rat'] },
-  { code:'HB-05', cat:'ก. ค่าเลี้ยงและดูแลสัตว์ทดลอง', name:'ค่าเลี้ยงและดูแลหนูตะเภา', unit:'กรง-วัน', basis:'cageDay', r:[30,38,48], auto:'husbandry', species:['gpig'] },
+  { code:'HB-01', cat:'ก. ค่าเลี้ยงและดูแลสัตว์ทดลอง', name:'ค่าเลี้ยงและดูแลหนูเมาส์ — กรงมาตรฐาน (open cage)', unit:'ตัว-วัน', basis:'animalDay', r:[3,4,5], auto:'husbandry', species:['mouse'] },
+  { code:'HB-02', cat:'ก. ค่าเลี้ยงและดูแลสัตว์ทดลอง', name:'ค่าเลี้ยงและดูแลหนูเมาส์ — ระบบกรงระบายอากาศเฉพาะ (IVC)', unit:'ตัว-วัน', basis:'animalDay', r:[4,5,6.5], auto:'husbandry', species:['mouse'] },
+  { code:'HB-03', cat:'ก. ค่าเลี้ยงและดูแลสัตว์ทดลอง', name:'ค่าเลี้ยงและดูแลหนูแรท — กรงมาตรฐาน (open cage)', unit:'ตัว-วัน', basis:'animalDay', r:[7,9,11], auto:'husbandry', species:['rat'] },
+  { code:'HB-04', cat:'ก. ค่าเลี้ยงและดูแลสัตว์ทดลอง', name:'ค่าเลี้ยงและดูแลหนูแรท — ระบบกรงระบายอากาศเฉพาะ (IVC)', unit:'ตัว-วัน', basis:'animalDay', r:[9,11,14], auto:'husbandry', species:['rat'] },
+  { code:'HB-05', cat:'ก. ค่าเลี้ยงและดูแลสัตว์ทดลอง', name:'ค่าเลี้ยงและดูแลหนูตะเภา', unit:'ตัว-วัน', basis:'animalDay', r:[15,19,24], auto:'husbandry', species:['gpig'] },
   { code:'HB-06', cat:'ก. ค่าเลี้ยงและดูแลสัตว์ทดลอง', name:'ค่าเลี้ยงและดูแลกระต่าย', unit:'ตัว-วัน', basis:'animalDay', r:[60,75,95], auto:'husbandry', species:['rabbit'] },
-  { code:'HB-07', cat:'ก. ค่าเลี้ยงและดูแลสัตว์ทดลอง', name:'ค่าเลี้ยงและดูแลแฮมสเตอร์', unit:'กรง-วัน', basis:'cageDay', r:[18,23,29], auto:'husbandry', species:['hamster'] },
-  { code:'HB-08', cat:'ก. ค่าเลี้ยงและดูแลสัตว์ทดลอง', name:'ค่าห้องแยกกักโรค / ห้องปรับสภาพสัตว์ (quarantine room)', unit:'กรง-วัน', basis:'cageDay', r:[18,23,29], auto:'husbandry', species:null },
-  { code:'HB-09', cat:'ก. ค่าเลี้ยงและดูแลสัตว์ทดลอง', name:'ค่าห้องเลี้ยงพิเศษสำหรับงานที่มีสารเสี่ยง / ระดับความปลอดภัยทางชีวภาพ 2', unit:'กรง-วัน', basis:'cageDay', r:[35,45,58], auto:'husbandry', species:null },
+  { code:'HB-07', cat:'ก. ค่าเลี้ยงและดูแลสัตว์ทดลอง', name:'ค่าเลี้ยงและดูแลแฮมสเตอร์', unit:'ตัว-วัน', basis:'animalDay', r:[5,6,7], auto:'husbandry', species:['hamster'] },
+  { code:'HB-08', cat:'ก. ค่าเลี้ยงและดูแลสัตว์ทดลอง', name:'ค่าห้องแยกกักโรค / ห้องปรับสภาพสัตว์ (quarantine room)', unit:'ตัว-วัน', basis:'animalDay', r:[4,5,6], auto:'husbandry', species:null },
+  { code:'HB-09', cat:'ก. ค่าเลี้ยงและดูแลสัตว์ทดลอง', name:'ค่าห้องเลี้ยงพิเศษสำหรับงานที่มีสารเสี่ยง / ระดับความปลอดภัยทางชีวภาพ 2', unit:'ตัว-วัน', basis:'animalDay', r:[7,9,12], auto:'husbandry', species:null },
 
   { code:'PR-01', cat:'ข. หัตถการและงานสัตวแพทย์', name:'ป้อนสารทดสอบทางปาก (oral gavage)', unit:'ตัว-ครั้ง', basis:'perUse', r:[15,20,25], auto:'procedure' },
   { code:'PR-02', cat:'ข. หัตถการและงานสัตวแพทย์', name:'ฉีดสารทดสอบ (IP / SC / IM / IV)', unit:'ตัว-ครั้ง', basis:'perUse', r:[15,20,25], auto:'procedure' },
@@ -991,15 +979,15 @@ const DEFAULT_CATEGORIES = [
 ];
 
 const DEFAULT_SPECIES = [
-  { key:'mouse',     label:'หนูเมาส์ (Mouse)',      perCage:5, note:'พื้นที่ขั้นต่ำ 38.7–96.8 ตร.ซม./ตัว ตามน้ำหนัก' },
-  { key:'rat',       label:'หนูแรท (Rat)',          perCage:3, note:'พื้นที่ขั้นต่ำ 109.7–451.6 ตร.ซม./ตัว ตามน้ำหนัก' },
-  { key:'gpig',      label:'หนูตะเภา (Guinea pig)', perCage:2, note:'พื้นที่ขั้นต่ำ 387.1–651.6 ตร.ซม./ตัว' },
-  { key:'rabbit',    label:'กระต่าย (Rabbit)',      perCage:1, note:'เลี้ยงเดี่ยว พื้นที่ขั้นต่ำ 0.14–0.46 ตร.ม./ตัว' },
-  { key:'hamster',   label:'แฮมสเตอร์ (Hamster)',   perCage:4, note:'พื้นที่ขั้นต่ำตามน้ำหนักและสายพันธุ์' },
-  { key:'pig',       label:'สุกร (Pig)',            perCage:1, note:'ต้องประเมินพื้นที่คอกเป็นรายกรณี' },
-  { key:'dog',       label:'สุนัข (Dog)',           perCage:1, note:'ต้องประเมินพื้นที่คอกเป็นรายกรณี' },
-  { key:'zebrafish', label:'ปลาม้าลาย (Zebrafish)', perCage:20, note:'คิดตามตู้/แท็งก์ ปรับจำนวนต่อหน่วยตามระบบเลี้ยง' },
-  { key:'other',     label:'อื่น ๆ',                perCage:1, note:'ระบุรายละเอียดเพิ่มเติมในหมายเหตุ' }
+  { key:'mouse',     label:'หนูเมาส์ (Mouse)',      note:'พื้นที่ขั้นต่ำ 38.7–96.8 ตร.ซม./ตัว ตามน้ำหนัก' },
+  { key:'rat',       label:'หนูแรท (Rat)',          note:'พื้นที่ขั้นต่ำ 109.7–451.6 ตร.ซม./ตัว ตามน้ำหนัก' },
+  { key:'gpig',      label:'หนูตะเภา (Guinea pig)', note:'พื้นที่ขั้นต่ำ 387.1–651.6 ตร.ซม./ตัว' },
+  { key:'rabbit',    label:'กระต่าย (Rabbit)',      note:'เลี้ยงเดี่ยว พื้นที่ขั้นต่ำ 0.14–0.46 ตร.ม./ตัว' },
+  { key:'hamster',   label:'แฮมสเตอร์ (Hamster)',   note:'พื้นที่ขั้นต่ำตามน้ำหนักและสายพันธุ์' },
+  { key:'pig',       label:'สุกร (Pig)',            note:'ต้องประเมินพื้นที่คอกเป็นรายกรณี' },
+  { key:'dog',       label:'สุนัข (Dog)',           note:'ต้องประเมินพื้นที่คอกเป็นรายกรณี' },
+  { key:'zebrafish', label:'ปลาม้าลาย (Zebrafish)', note:'คิดตามตู้/แท็งก์ ปรับจำนวนต่อหน่วยตามระบบเลี้ยง' },
+  { key:'other',     label:'อื่น ๆ',                note:'ระบุรายละเอียดเพิ่มเติมในหมายเหตุ' }
 ];
 
 const DEFAULT_SERVICE_TYPES = [
@@ -1042,6 +1030,7 @@ function load() {
     db.settings.tiers = DEFAULT_SETTINGS.tiers.slice();
   }
   if (!Array.isArray(db.rates) || db.rates.length === 0) db.rates = JSON.parse(JSON.stringify(DEFAULT_RATES));
+  migrateRates(db.rates);
   if (!Array.isArray(db.species) || db.species.length === 0) db.species = JSON.parse(JSON.stringify(DEFAULT_SPECIES));
   if (!Array.isArray(db.serviceTypes) || db.serviceTypes.length === 0) db.serviceTypes = DEFAULT_SERVICE_TYPES.slice();
   if (!Array.isArray(db.categories) || db.categories.length === 0) db.categories = DEFAULT_CATEGORIES.slice();
@@ -1049,6 +1038,16 @@ function load() {
   if (!db.counters) db.counters = {};
   if (!Array.isArray(db.quotations)) db.quotations = [];
 }
+/* ระบบเลิกคิดค่าบริการแบบ “ต่อกรง” แล้ว — แปลงอัตราเก่าที่ยังเป็นกรง-วันให้เป็นตัว-วันโดยอัตโนมัติ
+   หมายเหตุ: แปลงเฉพาะหน่วยและฐานคำนวณ ไม่แตะตัวเลขอัตรา ผู้ดูแลต้องทบทวนตัวเลขเองเพราะความหมายเปลี่ยนไป */
+function migrateRates(list) {
+  if (!Array.isArray(list)) return;
+  list.forEach(r => {
+    if (r.basis === 'cageDay') r.basis = 'animalDay';
+    if (r.unit === 'กรง-วัน') r.unit = 'ตัว-วัน';
+  });
+}
+
 let storageWarned = false;
 function save() {
   cloudPushMaster();   // ส่งข้อมูลหลักขึ้นคลาวด์ให้เครื่องอื่นด้วย (ไม่ทำอะไรถ้ายังไม่ได้ล็อกอิน)
@@ -1182,7 +1181,7 @@ function fillSettingsForm() {
   $('sTier0').value = s.tiers[0]; $('sTier1').value = s.tiers[1]; $('sTier2').value = s.tiers[2];
   $('sPreparer').value = s.preparer; $('sPreparerPos').value = s.preparerPos;
   $('sApprover').value = s.approver; $('sApproverPos').value = s.approverPos;
-  $('sAccDays').value = s.accDays; $('sPrintCopy').value = s.printCopy; $('sTerms').value = s.terms;
+  $('sPrintCopy').value = s.printCopy; $('sTerms').value = s.terms;
   $('sNextRun').value = nextRunFor(periodYearCE(todayIso()));
 }
 function readSettingsForm() {
@@ -1197,7 +1196,7 @@ function readSettingsForm() {
   s.tiers = [$('sTier0').value.trim(), $('sTier1').value.trim(), $('sTier2').value.trim()];
   s.preparer = $('sPreparer').value.trim(); s.preparerPos = $('sPreparerPos').value.trim();
   s.approver = $('sApprover').value.trim(); s.approverPos = $('sApproverPos').value.trim();
-  s.accDays = num($('sAccDays').value); s.printCopy = $('sPrintCopy').value; s.terms = $('sTerms').value;
+  s.printCopy = $('sPrintCopy').value; s.terms = $('sTerms').value;
 }
 function saveSettings() {
   readSettingsForm();
@@ -1218,7 +1217,7 @@ function renderRates() {
   ['thTier0','thTier1','thTier2'].forEach((id, i) => { $(id).textContent = db.settings.tiers[i]; });
   $('rateRef').value = db.meta.rateRef || '';
   $('rateEffective').value = db.meta.rateEffective || '';
-  const basisOpts = ['cageDay','animalDay','animal','perUse','fixed'];
+  const basisOpts = ['animalDay','animal','perUse','fixed'];
   const autoOpts = [['husbandry','ก. ค่าเลี้ยง'], ['procedure','ข. หัตถการ/อื่น ๆ'], ['', 'ไม่แสดง']];
   const body = $('ratesBody');
   body.innerHTML = db.rates.map((r, i) => `
@@ -1298,12 +1297,11 @@ function renderMaster() {
 
   // --- ชนิดสัตว์ ---
   $('speciesBody').innerHTML = db.species.length === 0
-    ? '<tr><td colspan="6" class="empty">ยังไม่มีชนิดสัตว์</td></tr>'
+    ? '<tr><td colspan="5" class="empty">ยังไม่มีชนิดสัตว์</td></tr>'
     : db.species.map((s, i) => `
       <tr>
         <td><input value="${esc(s.key)}" onchange="updSpecies(${i},'key',this.value)"></td>
         <td><input value="${esc(s.label)}" onchange="updSpecies(${i},'label',this.value)"></td>
-        <td class="num"><input class="num" type="number" min="1" step="1" value="${num(s.perCage) || 1}" onchange="updSpecies(${i},'perCage',this.value)"></td>
         <td><input value="${esc(s.note)}" onchange="updSpecies(${i},'note',this.value)"></td>
         <td class="ctr">${orderBtns('moveSpecies', i, db.species.length)}</td>
         <td class="ctr"><button class="btn danger-outline sm" onclick="delSpecies(${i})">✕</button></td>
@@ -1350,7 +1348,7 @@ function delServiceType(i) {
 function addSpecies() {
   let k = 'sp' + (db.species.length + 1);
   while (db.species.some(s => s.key === k)) k += 'x';
-  db.species.push({ key:k, label:'(ชนิดสัตว์ใหม่)', perCage:1, note:'' });
+  db.species.push({ key:k, label:'(ชนิดสัตว์ใหม่)', note:'' });
   afterMasterChange(); toast('เพิ่มชนิดสัตว์แล้ว — แก้รหัสและชื่อในแถวล่างสุด');
 }
 function updSpecies(i, field, v) {
@@ -1366,7 +1364,6 @@ function updSpecies(i, field, v) {
       if (Array.isArray(r.species)) r.species = r.species.map(x => x === old ? k : x);
     });
   }
-  else if (field === 'perCage') s.perCage = Math.max(1, Math.round(num(v)) || 1);
   else s[field] = String(v).trim();
   afterMasterChange();
   if ($('qSpecies').value === s.key) onSpeciesChange();
@@ -1450,34 +1447,25 @@ function onTierChange() { fillRatePicker(); renderAutoPanels(); }
 /* ================= ตัวช่วยคำนวณอัตโนมัติ ================= */
 function speciesInfo() {
   return db.species.find(s => s.key === $('qSpecies').value) || db.species[0] ||
-         { key:'', label:'-', perCage:1, note:'' };
+         { key:'', label:'-', note:'' };
 }
 function onSpeciesChange() {
-  const sp = speciesInfo();
-  $('qPerCage').value = sp.perCage;
-  $('densityHint').textContent = sp.note;
   renderAutoPanels(true);   // เปลี่ยนชนิดสัตว์ = เลือกรายการค่าเลี้ยงให้ใหม่ตามชนิดที่เลือก
   recalcHelper();
 }
 function helperValues() {
   const animals = Math.max(0, Math.round(num($('qAnimals').value)));
-  const perCage = Math.max(1, Math.round(num($('qPerCage').value)) || 1);
-  const cages = animals > 0 ? Math.ceil(animals / perCage) : 0;
-  const studyDays = daysBetween($('qStart').value, $('qEnd').value);
-  const acc = Math.max(0, Math.round(num($('qAcc').value)));
-  const days = studyDays > 0 ? studyDays + acc : acc;
-  return { animals, perCage, cages, studyDays, acc, days };
+  const days = daysBetween($('qStart').value, $('qEnd').value);
+  return { animals, days };
 }
 function recalcHelper() {
   const h = helperValues();
-  $('qCages').value = h.cages;
   $('qDays').value = h.days;
   const sp = speciesInfo();
-  let msg = `<b>ผลคำนวณอัตโนมัติ:</b> สัตว์ ${h.animals} ตัว ÷ ${h.perCage} ตัว/กรง = <b>${h.cages} กรง</b> · ` +
-            `ระยะทดลอง ${h.studyDays} วัน + ปรับสภาพ ${h.acc} วัน = <b>${h.days} วัน</b> · ` +
-            `รวม <b>${h.cages * h.days} กรง-วัน</b> / <b>${h.animals * h.days} ตัว-วัน</b><br>` +
-            `<span class="muted">มาตรฐานความหนาแน่น ${esc(sp.label)}: ${esc(sp.note)}</span>`;
-  if (h.studyDays <= 0 && ($('qStart').value || $('qEnd').value)) {
+  let msg = `<b>ผลคำนวณอัตโนมัติ:</b> ระยะเวลาเลี้ยง <b>${h.days} วัน</b> · ` +
+            `สัตว์ ${h.animals} ตัว × ${h.days} วัน = <b>${h.animals * h.days} ตัว-วัน</b>` +
+            (sp.note ? `<br><span class="muted">${esc(sp.label)}: ${esc(sp.note)}</span>` : '');
+  if (h.days <= 0 && ($('qStart').value || $('qEnd').value)) {
     msg += '<br><b style="color:#b9770e">⚠ ตรวจสอบช่วงวันที่: วันสิ้นสุดต้องไม่อยู่ก่อนวันเริ่มเลี้ยง</b>';
   }
   $('helperNote').innerHTML = msg;
@@ -1490,7 +1478,6 @@ function recalcHelper() {
 function computeQty(rate, h) {
   h = h || helperValues();
   switch (rate.basis) {
-    case 'cageDay':   return h.cages * h.days;
     case 'animalDay': return h.animals * h.days;
     case 'animal':    return h.animals;
     case 'fixed':     return 1;
@@ -1644,9 +1631,9 @@ function collectForm() {
     serviceType: $('qServiceType').value,
     species: $('qSpecies').value,
     speciesLabel: speciesInfo().label,
-    animals: h.animals, perCage: h.perCage, cages: h.cages,
+    animals: h.animals,
     start: $('qStart').value, end: $('qEnd').value,
-    accDays: h.acc, studyDays: h.studyDays, totalDays: h.days,
+    totalDays: h.days,
     items: JSON.parse(JSON.stringify(curItems)),
     billDisc: t.billDisc, vatOn: $('qVatOn').checked, vatRate: t.vatRate,
     sub: t.gross, itemDisc: t.itemDisc, after: t.after, vat: t.vat, grand: t.grand,
@@ -1708,7 +1695,6 @@ function newQuotation() {
   $('qSpecies').selectedIndex = 0;
   $('qAnimals').value = 0;
   $('qStart').value = ''; $('qEnd').value = '';
-  $('qAcc').value = s.accDays;
   $('qBillDisc').value = 0; $('qVatOn').checked = false;
   $('qTerms').value = s.terms;
   $('qPreparer').value = s.preparer; $('qPreparerPos').value = s.preparerPos;
@@ -1734,14 +1720,12 @@ function loadQuotation(id) {
   ensureOption($('qServiceType'), q.serviceType, q.serviceType);
   ensureOption($('qSpecies'), q.species, q.speciesLabel || q.species);
   $('qAnimals').value = q.animals || 0;
-  $('qPerCage').value = q.perCage || 1;
-  $('qStart').value = q.start || ''; $('qEnd').value = q.end || ''; $('qAcc').value = q.accDays || 0;
+  $('qStart').value = q.start || ''; $('qEnd').value = q.end || '';
   $('qBillDisc').value = q.billDisc || 0; $('qVatOn').checked = !!q.vatOn;
   $('qTerms').value = q.terms || ''; $('qPreparer').value = q.preparer || '';
   $('qPreparerPos').value = q.preparerPos || ''; $('qApprover').value = q.approver || '';
   $('qApproverPos').value = q.approverPos || ''; $('qInternal').value = q.internal || '';
   curItems = JSON.parse(JSON.stringify(q.items || []));
-  $('densityHint').textContent = speciesInfo().note;
   $('editingBadge').style.display = ''; $('editingBadge').textContent = 'กำลังแก้ไข: ' + q.no;
   $('saveWarn').style.display = 'none';
   fillRatePicker(); renderAutoPanels(); recalcHelper(); renderItems();
@@ -1837,8 +1821,7 @@ function docHtml(q, copyLabel) {
   const scope = [
     q.serviceType,
     q.speciesLabel + ' จำนวน ' + q.animals + ' ตัว',
-    q.cages ? ('ประมาณ ' + q.cages + ' กรง') : '',
-    q.totalDays ? ('ระยะเวลาเลี้ยงรวม ' + q.totalDays + ' วัน (รวมปรับสภาพ ' + q.accDays + ' วัน)') : '',
+    q.totalDays ? ('ระยะเวลาเลี้ยง ' + q.totalDays + ' วัน (รวม ' + (num(q.animals) * num(q.totalDays)) + ' ตัว-วัน)') : '',
     (q.start && q.end) ? (thaiDate(q.start) + ' ถึง ' + thaiDate(q.end)) : ''
   ].filter(Boolean).join(' · ');
 
@@ -1958,11 +1941,11 @@ function download(name, content, type) {
 function exportCsv() {
   const head = ['เลขที่ใบเสนอราคา','วันที่','ยืนราคาถึง','สถานะ','เลขที่รับบริการ','Study No.','ประเภทผู้รับบริการ',
     'ผู้ขอรับบริการ','หน่วยงาน','ผู้ประสานงาน','โทรศัพท์','อีเมล','โครงการ','ประเภทบริการ','ชนิดสัตว์',
-    'จำนวนสัตว์ (ตัว)','จำนวนกรง','จำนวนวันรวม','รวมเป็นเงิน','ส่วนลดรวม','ภาษีมูลค่าเพิ่ม','ยอดรวมทั้งสิ้น'];
+    'จำนวนสัตว์ (ตัว)','จำนวนวันเลี้ยง','รวมเป็นเงิน','ส่วนลดรวม','ภาษีมูลค่าเพิ่ม','ยอดรวมทั้งสิ้น'];
   const lines = [head.join(',')].concat(db.quotations.map(q => [
     q.no, q.date, q.validUntil, q.status, q.serviceNo, q.studyNo, q.tierName,
     q.custName, q.custOrg, q.custContact, q.custPhone, q.custEmail, q.project, q.serviceType, q.speciesLabel,
-    q.animals, q.cages, q.totalDays, num(q.sub).toFixed(2), (num(q.itemDisc) + num(q.billDisc)).toFixed(2),
+    q.animals, q.totalDays, num(q.sub).toFixed(2), (num(q.itemDisc) + num(q.billDisc)).toFixed(2),
     num(q.vat).toFixed(2), num(q.grand).toFixed(2)
   ].map(v => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"').join(',')));
   download('LASC-quotations-' + todayIso() + '.csv', '﻿' + lines.join('\r\n'), 'text/csv;charset=utf-8');
@@ -2187,7 +2170,7 @@ function applyCloudMaster(m) {
   applyingSnapshot = true;
   try {
     if (m.settings) db.settings = Object.assign({}, DEFAULT_SETTINGS, m.settings);
-    if (Array.isArray(m.rates) && m.rates.length) db.rates = m.rates;
+    if (Array.isArray(m.rates) && m.rates.length) { db.rates = m.rates; migrateRates(db.rates); }
     if (Array.isArray(m.species) && m.species.length) db.species = m.species;
     if (Array.isArray(m.serviceTypes) && m.serviceTypes.length) db.serviceTypes = m.serviceTypes;
     if (Array.isArray(m.categories) && m.categories.length) db.categories = m.categories;
@@ -2260,7 +2243,7 @@ function onCloudDenied() {
 }
 
 /* ================= PWA: ติดตั้งลงเครื่อง / อัปเดตเวอร์ชัน / ใช้งานออฟไลน์ ================= */
-const APP_VERSION = '1.1.0 (27 ส.ค. 2569) — ซิงก์คลาวด์';
+const APP_VERSION = '1.2.0 (27 ส.ค. 2569)';
 let deferredInstall = null;
 let swRegistration = null;
 let reloadingForUpdate = false;
