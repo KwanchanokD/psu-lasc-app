@@ -543,7 +543,7 @@
     <!-- ---- การนำเข้าสัตว์ ---- -->
     <div id="tabImports">
       <div class="card">
-        <div class="card-head"><h2>เพิ่มรายการนำเข้าสัตว์ทดลอง</h2></div>
+        <div class="card-head"><h2 id="importFormTitle">เพิ่มรายการนำเข้าสัตว์ทดลอง</h2></div>
         <div class="card-body">
           <form onsubmit="addImport(event)">
             <div class="grid grid-3">
@@ -607,7 +607,9 @@
               </label>
             </div>
             <div class="form-actions">
-              <button type="submit" class="btn">＋ เพิ่มรายการนำเข้า</button>
+              <input type="hidden" id="i_editId">
+              <button type="submit" class="btn" id="i_submitBtn">＋ เพิ่มรายการนำเข้า</button>
+              <button type="button" class="btn secondary hidden" id="i_cancelBtn" onclick="cancelEditImport()">ยกเลิกการแก้ไข</button>
             </div>
             <div class="note-box">
               💡 หลังบันทึกแล้ว กด <b>「📄 PDF」</b> ในตารางด้านล่างเพื่อพิมพ์/บันทึก
@@ -1052,13 +1054,16 @@ function addImport(ev) {
   ev.preventDefault();
   const p = getProject(currentId);
   const qty = Number(i_qty.value);
-  const imported = (p.imports || []).reduce((s, i) => s + Number(i.qty || 0), 0);
+  const editId = i_editId.value;
+  p.imports = p.imports || [];
+  // ตอนแก้ไข ไม่ต้องนับจำนวนของรายการเดิมซ้ำ
+  const imported = p.imports
+    .filter(i => i.id !== editId)
+    .reduce((s, i) => s + Number(i.qty || 0), 0);
   if (imported + qty > p.approved) {
     if (!confirm(`⚠ จำนวนนำเข้ารวม (${imported + qty} ตัว) จะเกินจำนวนที่อนุมัติ (${p.approved} ตัว)\nยืนยันที่จะบันทึกหรือไม่?`)) return;
   }
-  p.imports = p.imports || [];
-  p.imports.push({
-    id: uid(),
+  const data = {
     no: i_no.value.trim(),
     date: i_date.value,
     qty,
@@ -1070,13 +1075,53 @@ function addImport(ev) {
     health: i_health.value,
     healthDetail: i_healthDetail.value.trim(),
     inspector: i_inspector.value.trim()
-  });
+  };
+  if (editId) {
+    const im = p.imports.find(x => x.id === editId);
+    if (!im) { cancelEditImport(); return; }
+    Object.assign(im, data);   // คงสถานะสิ้นสุดการวิจัยเดิมไว้
+  } else {
+    p.imports.push({ id: uid(), ...data });
+  }
   p.imports.sort((a, b) => a.date.localeCompare(b.date));
   persist();
-  ev.target.reset();
+  cancelEditImport();
   renderImports();
+  toast(editId ? 'บันทึกการแก้ไขรายการนำเข้าเรียบร้อย' : 'เพิ่มรายการนำเข้าเรียบร้อย');
+}
+
+/* เปิดฟอร์มเพื่อแก้ไขรายการนำเข้าที่บันทึกไว้แล้ว */
+function editImport(id) {
+  const p = getProject(currentId);
+  const im = (p.imports || []).find(x => x.id === id);
+  if (!im) return;
+  i_editId.value = im.id;
+  i_no.value = im.no || '';
+  i_date.value = im.date || '';
+  i_qty.value = im.qty || '';
+  i_sex.value = im.sex || '';
+  i_strain.value = im.strain || '';
+  i_age.value = im.age || '';
+  i_source.value = im.source || '';
+  i_note.value = im.note || '';
+  i_health.value = im.health || '';
+  i_healthDetail.value = im.healthDetail || '';
+  i_inspector.value = im.inspector || '';
+  document.getElementById('importFormTitle').textContent =
+    '✎ แก้ไขรายการนำเข้า' + (im.no ? ' เลขที่ ' + im.no : '');
+  document.getElementById('i_submitBtn').textContent = '💾 บันทึกการแก้ไข';
+  document.getElementById('i_cancelBtn').classList.remove('hidden');
+  document.getElementById('importFormTitle').scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+function cancelEditImport() {
+  const form = document.querySelector('#tabImports form');
+  if (form) form.reset();
+  i_editId.value = '';
+  document.getElementById('importFormTitle').textContent = 'เพิ่มรายการนำเข้าสัตว์ทดลอง';
+  document.getElementById('i_submitBtn').textContent = '＋ เพิ่มรายการนำเข้า';
+  document.getElementById('i_cancelBtn').classList.add('hidden');
   prefillImportForm();
-  toast('เพิ่มรายการนำเข้าเรียบร้อย');
 }
 
 /* เติมค่า เพศ/สายพันธุ์/อายุ ในฟอร์มนำเข้าจากข้อมูลโครงการ */
@@ -1145,7 +1190,7 @@ function renderImports() {
     return;
   }
   el.innerHTML = `<table class="data">
-    <thead><tr><th>เลขที่นำเข้า</th><th>วันที่นำเข้า</th><th>จำนวน (ตัว)</th><th>เพศ / สายพันธุ์ / อายุ</th><th>แหล่งที่มา</th><th>สุขภาพวันนำเข้า</th><th>สถานะการวิจัย</th><th>หมายเหตุ</th><th style="min-width:230px"></th></tr></thead>
+    <thead><tr><th>เลขที่นำเข้า</th><th>วันที่นำเข้า</th><th>จำนวน (ตัว)</th><th>เพศ / สายพันธุ์ / อายุ</th><th>แหล่งที่มา</th><th>สุขภาพวันนำเข้า</th><th>สถานะการวิจัย</th><th>หมายเหตุ</th><th style="min-width:300px"></th></tr></thead>
     <tbody>${imports.map((i, idx) => `
       <tr>
         <td style="white-space:nowrap">${esc(i.no) || (idx + 1)}</td>
@@ -1164,6 +1209,7 @@ function renderImports() {
           ${i.ended
             ? `<button class="btn small secondary" onclick="unendImport('${i.id}')">↩ ยกเลิกสิ้นสุด</button>`
             : `<button class="btn small" style="background:var(--warning)" onclick="endImport('${i.id}')">⏹ สิ้นสุดการวิจัย</button>`}
+          <button class="btn small secondary" onclick="editImport('${i.id}')">✎ แก้ไข</button>
           <button class="btn small secondary" onclick="printImport('${i.id}')">📄 PDF</button>
           <button class="btn small danger-outline" onclick="removeImport('${i.id}')">ลบ</button>
         </td>
@@ -2421,7 +2467,7 @@ window.onFirebaseReady = function (api) {
 };
 
 /* ========== PWA: install, update & offline ========== */
-const APP_VERSION = '1.5.1 (21 ส.ค. 2569)';
+const APP_VERSION = '1.6.0 (21 ส.ค. 2569)';
 let deferredInstall = null;
 let swRegistration = null;
 let reloadingForUpdate = false;
