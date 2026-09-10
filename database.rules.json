@@ -1,0 +1,31 @@
+{
+  // กฎความปลอดภัยของ Realtime Database — โปรเจกต์ psu-lasc-animal
+  // อนุญาตเฉพาะผู้ที่เข้าสู่ระบบด้วยอีเมล @psu.ac.th ที่ยืนยันอีเมลแล้วเท่านั้น
+  //
+  // วิธีติดตั้ง: Firebase Console → Realtime Database → แท็บ Rules
+  //             วางเนื้อหาไฟล์นี้ทับของเดิม แล้วกด Publish
+  //
+  // หมายเหตุ: การตรวจสอบฝั่งหน้าเว็บ (index.html) เป็นแค่ความสะดวกของผู้ใช้
+  //           กฎในไฟล์นี้คือด่านที่บังคับใช้จริง เพราะทำงานบนเซิร์ฟเวอร์ของ Firebase
+  "rules": {
+    // ปิดทุกอย่างที่ไม่ได้ระบุไว้อย่างชัดเจน
+    ".read": false,
+    ".write": false,
+
+    "data": {
+      ".read":  "auth != null && auth.token.email_verified == true && auth.token.email.toLowerCase().endsWith('@psu.ac.th')",
+      ".write": "auth != null && auth.token.email_verified == true && auth.token.email.toLowerCase().endsWith('@psu.ac.th')",
+
+      "projects": {
+        "$projectId": {
+          // ข้อมูลโครงการต้องเป็นอ็อบเจกต์ที่มี id ตรงกับคีย์ (กันข้อมูลผิดรูปแบบ)
+          ".validate": "newData.hasChild('id') && newData.child('id').val() == $projectId"
+        }
+      },
+
+      "updatedAt": {
+        ".validate": "newData.isString()"
+      }
+    }
+  }
+}

@@ -345,8 +345,20 @@
     <div style="text-align:center;margin-bottom:10px" id="loginLogo"></div>
     <h3 style="color:var(--primary-dark);text-align:center;margin-bottom:4px">เข้าสู่ระบบ</h3>
     <p style="font-size:13px;color:var(--muted);text-align:center;margin-bottom:16px">
-      ใช้อีเมลและรหัสผ่านที่ผู้ดูแลระบบสร้างให้ เพื่อให้ข้อมูลซิงก์ทุกเครื่อง
+      เข้าสู่ระบบเพื่อให้ข้อมูลซิงก์ทุกเครื่อง<br>
+      <b>เฉพาะอีเมล @psu.ac.th เท่านั้น</b>
     </p>
+    <button type="button" id="lg_google" class="btn" onclick="doGoogleLogin()"
+            style="width:100%;background:#fff;color:#3c4043;border:1px solid #dadce0;font-weight:600">
+      <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="" width="18" height="18"
+           style="vertical-align:-4px;margin-right:8px" onerror="this.style.display='none'">เข้าสู่ระบบด้วยบัญชี Google
+    </button>
+    <p style="font-size:12px;color:var(--muted);text-align:center;margin:6px 0 2px">
+      (แนะนำ — ไม่ต้องจำรหัสผ่านเพิ่ม)
+    </p>
+    <div style="display:flex;align-items:center;gap:10px;margin:14px 0 10px;color:var(--muted);font-size:12px">
+      <span style="flex:1;height:1px;background:#e0e0e0"></span>หรือใช้อีเมล + รหัสผ่าน<span style="flex:1;height:1px;background:#e0e0e0"></span>
+    </div>
     <form onsubmit="doLogin(event)">
       <label class="field">อีเมล
         <input type="email" id="lg_email" required autocomplete="username" placeholder="you@psu.ac.th">
@@ -361,8 +373,13 @@
         <button type="button" class="btn secondary" onclick="document.getElementById('loginModal').classList.add('hidden')">ยกเลิก</button>
       </div>
     </form>
+    <div id="lg_reset_ok" class="hidden" style="margin-top:10px;background:#e2efda;border:1px solid #a9d08e;color:#375623;border-radius:8px;padding:9px 12px;font-size:13.5px"></div>
     <p style="font-size:12.5px;color:var(--muted);margin-top:10px">
-      ลืมรหัสผ่าน หรือยังไม่มีบัญชี — ติดต่อผู้ดูแลระบบเพื่อสร้าง/รีเซ็ตให้ (สมัครเองไม่ได้)
+      ลืมรหัสผ่าน? — กรอกอีเมลด้านบนแล้ว
+      <button type="button" id="lg_forgot" class="btn small secondary" style="margin-left:4px" onclick="doForgotPassword()">✉ ส่งลิงก์ตั้งรหัสผ่านใหม่</button>
+      <br>ลิงก์จะส่งไปที่อีเมล (ตรวจ Junk/Spam ด้วย) ใช้ได้ภายใน 1 ชั่วโมง
+      <br>ใช้ได้เฉพาะบัญชีที่ตั้งรหัสผ่านไว้ — ถ้าเข้าด้วยบัญชี Google ให้กดปุ่มด้านบนแทน
+      <br>ยังไม่มีบัญชี — ติดต่อผู้ดูแลระบบเพื่อสร้างให้ (สมัครเองไม่ได้)
     </p>
   </div>
 </div>
@@ -2330,6 +2347,7 @@ function openLogin() {
     return;
   }
   document.getElementById('lg_error').classList.add('hidden');
+  document.getElementById('lg_reset_ok').classList.add('hidden');
   document.getElementById('lg_pass').value = '';
   document.getElementById('loginModal').classList.remove('hidden');
   setTimeout(() => document.getElementById('lg_email').focus(), 50);
@@ -2342,7 +2360,16 @@ const LOGIN_ERRORS = {
   'auth/invalid-credential': 'อีเมลหรือรหัสผ่านไม่ถูกต้อง',
   'auth/user-disabled': 'บัญชีนี้ถูกระงับการใช้งาน',
   'auth/too-many-requests': 'ลองผิดหลายครั้งเกินไป กรุณารอสักครู่แล้วลองใหม่',
-  'auth/network-request-failed': 'เชื่อมต่ออินเทอร์เน็ตไม่ได้ กรุณาตรวจสอบสัญญาณ'
+  'auth/network-request-failed': 'เชื่อมต่ออินเทอร์เน็ตไม่ได้ กรุณาตรวจสอบสัญญาณ',
+  'auth/missing-email': 'กรุณากรอกอีเมลก่อน',
+  'auth/operation-not-allowed': 'ผู้ดูแลระบบยังไม่ได้เปิดวิธีเข้าสู่ระบบนี้ใน Firebase',
+  'app/domain-not-allowed': 'ระบบนี้ใช้ได้เฉพาะอีเมล @psu.ac.th เท่านั้น'
+};
+
+const GOOGLE_LOGIN_ERRORS = {
+  'auth/unauthorized-domain': 'โดเมนนี้ยังไม่ได้รับอนุญาตใน Firebase — ผู้ดูแลระบบต้องเพิ่ม kwanchanokd.github.io ที่ Authentication → Settings → Authorized domains',
+  'auth/account-exists-with-different-credential': 'อีเมลนี้เคยสมัครด้วยวิธีอื่น กรุณาเข้าสู่ระบบด้วยอีเมล + รหัสผ่านแทน',
+  'auth/popup-blocked': 'เบราว์เซอร์บล็อกหน้าต่างเข้าสู่ระบบ — กรุณาอนุญาตป๊อปอัปแล้วลองใหม่'
 };
 
 async function doLogin(ev) {
@@ -2353,7 +2380,11 @@ async function doLogin(ev) {
   btn.disabled = true; btn.textContent = 'กำลังเข้าสู่ระบบ…';
   errBox.classList.add('hidden');
   try {
-    await fb.signIn(fb.auth, lg_email.value.trim(), lg_pass.value);
+    const email = lg_email.value.trim();
+    if (!isAllowedEmail(email)) {
+      throw { code: 'app/domain-not-allowed' };
+    }
+    await fb.signIn(fb.auth, email, lg_pass.value);
     document.getElementById('loginModal').classList.add('hidden');
   } catch (e) {
     let msg = LOGIN_ERRORS[e.code];
@@ -2366,6 +2397,127 @@ async function doLogin(ev) {
   } finally {
     btn.disabled = false; btn.textContent = '🔑 เข้าสู่ระบบ';
     lg_pass.value = '';
+  }
+}
+
+/* ===== นโยบายบัญชี: อนุญาตเฉพาะอีเมลของมหาวิทยาลัย ===== */
+const ALLOWED_EMAIL_DOMAIN = 'psu.ac.th';
+
+function isAllowedEmail(email) {
+  return !!email && email.toLowerCase().endsWith('@' + ALLOWED_EMAIL_DOMAIN);
+}
+
+/* แสดงข้อความปฏิเสธในหน้าต่างเข้าสู่ระบบ (เปิดหน้าต่างให้ถ้ายังปิดอยู่) */
+function showLoginError(msg) {
+  const modal  = document.getElementById('loginModal');
+  const errBox = document.getElementById('lg_error');
+  document.getElementById('lg_reset_ok').classList.add('hidden');
+  modal.classList.remove('hidden');
+  errBox.textContent = msg;
+  errBox.classList.remove('hidden');
+}
+
+/* ตรวจสิทธิ์หลังเข้าสู่ระบบ — ถ้าไม่ผ่านให้ออกจากระบบทันที
+   คืนค่า true = ผ่าน, false = ถูกปฏิเสธ (จัดการข้อความให้แล้ว) */
+async function enforceAccountPolicy(user) {
+  if (!isAllowedEmail(user.email)) {
+    await fb.signOut(fb.auth);
+    showLoginError('บัญชี ' + (user.email || '') + ' ไม่ได้รับอนุญาตให้ใช้ระบบนี้ — ' +
+                   'ใช้ได้เฉพาะอีเมล @' + ALLOWED_EMAIL_DOMAIN + ' เท่านั้น');
+    return false;
+  }
+  if (!user.emailVerified) {
+    let sent = false;
+    try { await fb.sendEmailVerification(user); sent = true; } catch (e) {}
+    await fb.signOut(fb.auth);
+    showLoginError('อีเมล ' + user.email + ' ยังไม่ได้ยืนยัน' +
+      (sent ? ' — เราส่งลิงก์ยืนยันไปให้แล้ว กรุณาเปิดอีเมล (ดูใน Junk/Spam ด้วย) กดลิงก์ยืนยัน แล้วเข้าสู่ระบบอีกครั้ง'
+            : ' — กรุณาติดต่อผู้ดูแลระบบเพื่อยืนยันอีเมลให้'));
+    return false;
+  }
+  return true;
+}
+
+async function doGoogleLogin() {
+  const errBox = document.getElementById('lg_error');
+  const okBox  = document.getElementById('lg_reset_ok');
+  const btn    = document.getElementById('lg_google');
+  errBox.classList.add('hidden');
+  okBox.classList.add('hidden');
+
+  if (!fb || !fb.signInWithPopup) {
+    errBox.textContent = 'ยังเชื่อมต่อระบบคลาวด์ไม่ได้ — กรุณาตรวจสอบอินเทอร์เน็ตแล้วลองใหม่';
+    errBox.classList.remove('hidden');
+    return;
+  }
+
+  btn.disabled = true;
+  const label = btn.innerHTML;
+  btn.textContent = 'กำลังเข้าสู่ระบบด้วย Google…';
+  try {
+    await fb.signInWithPopup(fb.auth, fb.googleProvider);
+    document.getElementById('loginModal').classList.add('hidden');
+  } catch (e) {
+    // เบราว์เซอร์บล็อกป๊อปอัป (พบบ่อยบนมือถือ/แอปที่ติดตั้ง) ให้เปลี่ยนไปใช้แบบเปลี่ยนหน้าแทน
+    if (e.code === 'auth/popup-blocked' || e.code === 'auth/operation-not-supported-in-this-environment') {
+      try { await fb.signInWithRedirect(fb.auth, fb.googleProvider); return; } catch (e2) { e = e2; }
+    }
+    if (e.code === 'auth/popup-closed-by-user' || e.code === 'auth/cancelled-popup-request') {
+      // ผู้ใช้ปิดหน้าต่างเอง ไม่ต้องแจ้งเตือน
+    } else {
+      errBox.textContent = GOOGLE_LOGIN_ERRORS[e.code] || LOGIN_ERRORS[e.code] ||
+        ('เข้าสู่ระบบด้วย Google ไม่สำเร็จ: ' + (e.code || e.name || '') + ' ' + (e.message || ''));
+      errBox.classList.remove('hidden');
+    }
+  } finally {
+    btn.disabled = false; btn.innerHTML = label;
+  }
+}
+
+async function doForgotPassword() {
+  const errBox = document.getElementById('lg_error');
+  const okBox  = document.getElementById('lg_reset_ok');
+  const btn    = document.getElementById('lg_forgot');
+  const email  = document.getElementById('lg_email').value.trim();
+  errBox.classList.add('hidden');
+  okBox.classList.add('hidden');
+
+  if (!fb || !fb.sendPasswordReset) {
+    errBox.textContent = 'ยังเชื่อมต่อระบบคลาวด์ไม่ได้ — กรุณาตรวจสอบอินเทอร์เน็ตแล้วลองใหม่';
+    errBox.classList.remove('hidden');
+    return;
+  }
+  if (!email) {
+    errBox.textContent = 'กรุณากรอกอีเมลของคุณในช่องด้านบนก่อน แล้วจึงกดส่งลิงก์ตั้งรหัสผ่านใหม่';
+    errBox.classList.remove('hidden');
+    document.getElementById('lg_email').focus();
+    return;
+  }
+  if (!isAllowedEmail(email)) {
+    errBox.textContent = 'ระบบนี้ใช้ได้เฉพาะอีเมล @' + ALLOWED_EMAIL_DOMAIN + ' เท่านั้น';
+    errBox.classList.remove('hidden');
+    return;
+  }
+
+  btn.disabled = true; btn.textContent = 'กำลังส่ง…';
+  try {
+    try {
+      await fb.sendPasswordReset(fb.auth, email, { url: APP_URL });
+    } catch (e1) {
+      // ถ้าโดเมนของแอปยังไม่ถูกอนุญาตใน Firebase ให้ส่งแบบไม่มีลิงก์กลับแทน
+      if (e1.code === 'auth/unauthorized-continue-uri' || e1.code === 'auth/invalid-continue-uri') {
+        await fb.sendPasswordReset(fb.auth, email);
+      } else { throw e1; }
+    }
+    okBox.innerHTML = '✅ ส่งลิงก์ตั้งรหัสผ่านใหม่ไปที่ <b>' + email + '</b> แล้ว' +
+      '<br>เปิดอีเมล (ถ้าไม่เจอให้ดูใน Junk/Spam) กดลิงก์เพื่อตั้งรหัสผ่านใหม่ แล้วกลับมาเข้าสู่ระบบอีกครั้ง';
+    okBox.classList.remove('hidden');
+  } catch (e) {
+    errBox.textContent = LOGIN_ERRORS[e.code] ||
+      ('ส่งลิงก์ไม่สำเร็จ: ' + (e.code || e.name || '') + ' ' + (e.message || ''));
+    errBox.classList.remove('hidden');
+  } finally {
+    btn.disabled = false; btn.textContent = '✉ ส่งลิงก์ตั้งรหัสผ่านใหม่';
   }
 }
 
@@ -2436,6 +2588,7 @@ window.onFirebaseReady = function (api) {
       document.getElementById('cloudBar').classList.remove('hidden');
       return;
     }
+    if (!(await enforceAccountPolicy(user))) { cloudUser = null; return; }
     document.getElementById('cloudBar').classList.add('hidden');
     setCloudChip('', '☁ กำลังซิงก์ข้อมูล…');
     try {
@@ -2467,7 +2620,7 @@ window.onFirebaseReady = function (api) {
 };
 
 /* ========== PWA: install, update & offline ========== */
-const APP_VERSION = '1.6.0 (21 ส.ค. 2569)';
+const APP_VERSION = '1.7.0 (10 ก.ย. 2569)';
 let deferredInstall = null;
 let swRegistration = null;
 let reloadingForUpdate = false;
@@ -2571,10 +2724,22 @@ checkStoredHandle();
     const auth = authMod.getAuth(app);
     // จำการเข้าสู่ระบบไว้ — ถ้าเบราว์เซอร์ไม่อนุญาต (เช่นเปิดจากไฟล์ในเครื่อง) ให้ทำงานต่อได้
     try { await authMod.setPersistence(auth, authMod.browserLocalPersistence); } catch (e) {}
+    // ถ้ากลับมาจากการล็อกอินด้วย Google แบบเปลี่ยนหน้า (มือถือ) ให้รับผลลัพธ์ก่อน
+    try { await authMod.getRedirectResult(auth); } catch (e) {}
     window.onFirebaseReady({
       auth,
       rtdb: dbMod.getDatabase(app),
       signIn: authMod.signInWithEmailAndPassword,
+      sendPasswordReset: authMod.sendPasswordResetEmail,
+      googleProvider: (() => {
+        const gp = new authMod.GoogleAuthProvider();
+        // แสดงเฉพาะบัญชีของโดเมนมหาวิทยาลัยในหน้าจอเลือกบัญชีของ Google
+        gp.setCustomParameters({ hd: 'psu.ac.th', prompt: 'select_account' });
+        return gp;
+      })(),
+      sendEmailVerification: authMod.sendEmailVerification,
+      signInWithPopup: authMod.signInWithPopup,
+      signInWithRedirect: authMod.signInWithRedirect,
       signOut: authMod.signOut,
       onAuthStateChanged: authMod.onAuthStateChanged,
       ref: dbMod.ref, set: dbMod.set, get: dbMod.get,
