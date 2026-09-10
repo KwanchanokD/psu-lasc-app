@@ -804,6 +804,7 @@
 
 /* ========== Storage ========== */
 const STORE_KEY = 'animalMonitoringData_v1';
+const BACKUP_KEY = 'animalMonitoringData_v1_preCloudBackup';
 let db = { projects: [] };
 let currentId = null;
 
@@ -2528,10 +2529,41 @@ async function doLogout() {
 }
 
 /* รับข้อมูลจากคลาวด์มาแทนที่ข้อมูลในเครื่อง */
+/* กันข้อมูลหาย: เก็บสำเนาข้อมูลในเครื่องไว้ก่อนรับข้อมูลจากคลาวด์ครั้งแรก
+   กู้คืนได้ด้วย restoreLocalBackup() จาก Console ถ้าจำเป็น */
+function keepLocalBackup() {
+  try {
+    if (!db.projects || !db.projects.length) return;
+    if (localStorage.getItem(BACKUP_KEY)) return;   // เก็บครั้งแรกครั้งเดียว ไม่ทับของเดิม
+    localStorage.setItem(BACKUP_KEY, JSON.stringify({ savedAt: new Date().toISOString(), db }));
+  } catch (e) {}
+}
+
+function restoreLocalBackup() {
+  try {
+    const raw = localStorage.getItem(BACKUP_KEY);
+    if (!raw) { alert('ไม่พบสำเนาข้อมูลสำรองในเครื่องนี้'); return; }
+    const bak = JSON.parse(raw);
+    db = bak.db;
+    persist();
+    showList();
+    alert('กู้คืนข้อมูลสำรองของวันที่ ' + (bak.savedAt || '-') + ' เรียบร้อย');
+  } catch (e) { alert('กู้คืนข้อมูลสำรองไม่สำเร็จ'); }
+}
+
 function applyCloudSnapshot(remote) {
+  const list0 = remote ? Object.values(remote) : [];
+  // ถ้าคลาวด์ยังว่างแต่เครื่องนี้มีข้อมูลอยู่ และยังซิงก์ครั้งแรกไม่สำเร็จ
+  // ห้ามล้างข้อมูลในเครื่องเด็ดขาด — รอให้อัปโหลดขึ้นคลาวด์ก่อน
+  if (!list0.length && db.projects.length && !firstSyncDone) {
+    setCloudChip('err', '⚠ คลาวด์ยังไม่มีข้อมูล — เก็บข้อมูลในเครื่องไว้ก่อน (ไม่ถูกลบ) กำลังอัปโหลดให้…');
+    cloudPush();               // ดันข้อมูลในเครื่องขึ้นคลาวด์ แล้วรอ snapshot รอบถัดไป
+    return false;
+  }
+  keepLocalBackup();
   applyingSnapshot = true;
   try {
-    const list = remote ? Object.values(remote) : [];
+    const list = list0;
     list.sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
     db.projects = list;
     try { localStorage.setItem(STORE_KEY, JSON.stringify(db)); } catch (e) {}
@@ -2541,6 +2573,7 @@ function applyCloudSnapshot(remote) {
   } finally {
     applyingSnapshot = false;
   }
+  return true;
 }
 
 /* ส่งข้อมูลขึ้นคลาวด์ (หน่วงเล็กน้อยเพื่อไม่ให้เขียนถี่เกินไป) */
@@ -2603,7 +2636,7 @@ window.onFirebaseReady = function (api) {
       }
       // ติดตามการเปลี่ยนแปลงแบบเรียลไทม์
       fb.onValue(fb.ref(fb.rtdb, 'data/projects'), (s) => {
-        applyCloudSnapshot(s.exists() ? s.val() : null);
+        if (!applyCloudSnapshot(s.exists() ? s.val() : null)) return;   // ยังไม่พร้อม — กันข้อมูลในเครื่องหาย
         setCloudChip('ok', '☁ ซิงก์แล้ว · ' + (user.email || ''));
         if (!firstSyncDone) {
           firstSyncDone = true;
@@ -2620,7 +2653,7 @@ window.onFirebaseReady = function (api) {
 };
 
 /* ========== PWA: install, update & offline ========== */
-const APP_VERSION = '1.7.0 (10 ก.ย. 2569)';
+const APP_VERSION = '1.7.1 (10 ก.ย. 2569)';
 let deferredInstall = null;
 let swRegistration = null;
 let reloadingForUpdate = false;
