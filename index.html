@@ -361,8 +361,12 @@
         <button type="button" class="btn secondary" onclick="document.getElementById('loginModal').classList.add('hidden')">ยกเลิก</button>
       </div>
     </form>
+    <div id="lg_reset_ok" class="hidden" style="margin-top:10px;background:#e2efda;border:1px solid #a9d08e;color:#375623;border-radius:8px;padding:9px 12px;font-size:13.5px"></div>
     <p style="font-size:12.5px;color:var(--muted);margin-top:10px">
-      ลืมรหัสผ่าน หรือยังไม่มีบัญชี — ติดต่อผู้ดูแลระบบเพื่อสร้าง/รีเซ็ตให้ (สมัครเองไม่ได้)
+      ลืมรหัสผ่าน? — กรอกอีเมลด้านบนแล้ว
+      <button type="button" id="lg_forgot" class="btn small secondary" style="margin-left:4px" onclick="doForgotPassword()">✉ ส่งลิงก์ตั้งรหัสผ่านใหม่</button>
+      <br>ลิงก์จะส่งไปที่อีเมล (ตรวจ Junk/Spam ด้วย) ใช้ได้ภายใน 1 ชั่วโมง
+      <br>ยังไม่มีบัญชี — ติดต่อผู้ดูแลระบบเพื่อสร้างให้ (สมัครเองไม่ได้)
     </p>
   </div>
 </div>
@@ -2330,6 +2334,7 @@ function openLogin() {
     return;
   }
   document.getElementById('lg_error').classList.add('hidden');
+  document.getElementById('lg_reset_ok').classList.add('hidden');
   document.getElementById('lg_pass').value = '';
   document.getElementById('loginModal').classList.remove('hidden');
   setTimeout(() => document.getElementById('lg_email').focus(), 50);
@@ -2342,7 +2347,8 @@ const LOGIN_ERRORS = {
   'auth/invalid-credential': 'อีเมลหรือรหัสผ่านไม่ถูกต้อง',
   'auth/user-disabled': 'บัญชีนี้ถูกระงับการใช้งาน',
   'auth/too-many-requests': 'ลองผิดหลายครั้งเกินไป กรุณารอสักครู่แล้วลองใหม่',
-  'auth/network-request-failed': 'เชื่อมต่ออินเทอร์เน็ตไม่ได้ กรุณาตรวจสอบสัญญาณ'
+  'auth/network-request-failed': 'เชื่อมต่ออินเทอร์เน็ตไม่ได้ กรุณาตรวจสอบสัญญาณ',
+  'auth/missing-email': 'กรุณากรอกอีเมลก่อน'
 };
 
 async function doLogin(ev) {
@@ -2366,6 +2372,41 @@ async function doLogin(ev) {
   } finally {
     btn.disabled = false; btn.textContent = '🔑 เข้าสู่ระบบ';
     lg_pass.value = '';
+  }
+}
+
+async function doForgotPassword() {
+  const errBox = document.getElementById('lg_error');
+  const okBox  = document.getElementById('lg_reset_ok');
+  const btn    = document.getElementById('lg_forgot');
+  const email  = document.getElementById('lg_email').value.trim();
+  errBox.classList.add('hidden');
+  okBox.classList.add('hidden');
+
+  if (!fb || !fb.sendPasswordReset) {
+    errBox.textContent = 'ยังเชื่อมต่อระบบคลาวด์ไม่ได้ — กรุณาตรวจสอบอินเทอร์เน็ตแล้วลองใหม่';
+    errBox.classList.remove('hidden');
+    return;
+  }
+  if (!email) {
+    errBox.textContent = 'กรุณากรอกอีเมลของคุณในช่องด้านบนก่อน แล้วจึงกดส่งลิงก์ตั้งรหัสผ่านใหม่';
+    errBox.classList.remove('hidden');
+    document.getElementById('lg_email').focus();
+    return;
+  }
+
+  btn.disabled = true; btn.textContent = 'กำลังส่ง…';
+  try {
+    await fb.sendPasswordReset(fb.auth, email, { url: APP_URL });
+    okBox.innerHTML = '✅ ส่งลิงก์ตั้งรหัสผ่านใหม่ไปที่ <b>' + email + '</b> แล้ว' +
+      '<br>เปิดอีเมล (ถ้าไม่เจอให้ดูใน Junk/Spam) กดลิงก์เพื่อตั้งรหัสผ่านใหม่ แล้วกลับมาเข้าสู่ระบบอีกครั้ง';
+    okBox.classList.remove('hidden');
+  } catch (e) {
+    errBox.textContent = LOGIN_ERRORS[e.code] ||
+      ('ส่งลิงก์ไม่สำเร็จ: ' + (e.code || e.name || '') + ' ' + (e.message || ''));
+    errBox.classList.remove('hidden');
+  } finally {
+    btn.disabled = false; btn.textContent = '✉ ส่งลิงก์ตั้งรหัสผ่านใหม่';
   }
 }
 
@@ -2467,7 +2508,7 @@ window.onFirebaseReady = function (api) {
 };
 
 /* ========== PWA: install, update & offline ========== */
-const APP_VERSION = '1.6.0 (21 ส.ค. 2569)';
+const APP_VERSION = '1.7.0 (10 ก.ย. 2569)';
 let deferredInstall = null;
 let swRegistration = null;
 let reloadingForUpdate = false;
@@ -2575,6 +2616,7 @@ checkStoredHandle();
       auth,
       rtdb: dbMod.getDatabase(app),
       signIn: authMod.signInWithEmailAndPassword,
+      sendPasswordReset: authMod.sendPasswordResetEmail,
       signOut: authMod.signOut,
       onAuthStateChanged: authMod.onAuthStateChanged,
       ref: dbMod.ref, set: dbMod.set, get: dbMod.get,
