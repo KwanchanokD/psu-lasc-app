@@ -2458,17 +2458,20 @@ async function enforceAccountPolicy(user) {
     return false;
   }
 
-  let approved = false;
+  let approved = false, readFailed = false;
   try {
     const snap = await fb.get(fb.ref(fb.rtdb, 'allowlist/' + user.uid));
     approved = snap.exists() && snap.val() === true;
-  } catch (e) { approved = false; }
+  } catch (e) { readFailed = true; }
 
   if (!approved) {
     const uid = user.uid, email = user.email || '';
     await fb.signOut(fb.auth);
     showLoginError(
-      '⛔ บัญชี <b>' + email + '</b> ยังไม่ได้รับอนุมัติให้เข้าถึงข้อมูล' +
+      (readFailed
+        ? '⚠ ตรวจสอบสิทธิ์ไม่ได้ — ผู้ดูแลระบบยังไม่ได้นำกฎใหม่ไป Publish ที่ ' +
+          'Realtime Database → Rules'
+        : '⛔ บัญชี <b>' + email + '</b> ยังไม่ได้รับอนุมัติให้เข้าถึงข้อมูล') +
       '<br><br>กรุณาส่งรหัสนี้ให้ผู้ดูแลระบบเพื่อขออนุมัติ:' +
       '<br><code style="display:inline-block;margin-top:4px;padding:4px 8px;background:#fff;border:1px solid #f5c6cb;border-radius:6px;font-size:12px;word-break:break-all">' + uid + '</code>' +
       '<br><button type="button" class="btn small secondary" style="margin-top:8px" onclick="copyUid(\'' + uid + '\')">📋 คัดลอกรหัส</button>',
@@ -2691,7 +2694,7 @@ window.onFirebaseReady = function (api) {
 };
 
 /* ========== PWA: install, update & offline ========== */
-const APP_VERSION = '2.0.0 (10 ก.ย. 2569)';
+const APP_VERSION = '2.0.1 (10 ก.ย. 2569)';
 let deferredInstall = null;
 let swRegistration = null;
 let reloadingForUpdate = false;
