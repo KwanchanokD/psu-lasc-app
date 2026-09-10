@@ -2424,7 +2424,7 @@ async function doLogin(ev) {
 
 /* ===== นโยบายบัญชี: ต้องได้รับอนุมัติเป็นรายคน =====
    ผู้ดูแลระบบอนุมัติที่ Firebase Console → Realtime Database → Data
-   โดยสร้างข้อมูล   allowlist / <User UID> : true
+   โดยสร้างข้อมูล   allowed / <User UID> : true
    ถอนสิทธิ์ = ลบโหนดนั้นทิ้ง (มีผลทันทีในทุกเครื่อง)
    กฎที่บังคับใช้จริงอยู่ในไฟล์ database.rules.json */
 
@@ -2460,8 +2460,8 @@ async function enforceAccountPolicy(user) {
 
   let approved = false, readFailed = false;
   try {
-    const snap = await fb.get(fb.ref(fb.rtdb, 'allowlist/' + user.uid));
-    approved = snap.exists() && snap.val() === true;
+    const snap = await fb.get(fb.ref(fb.rtdb, 'allowed/' + user.uid));
+    approved = snap.exists() && snap.val() !== false;
   } catch (e) { readFailed = true; }
 
   if (!approved) {
@@ -2685,7 +2685,7 @@ window.onFirebaseReady = function (api) {
       }, () => {
         setCloudChip('err', '⚠ บัญชีนี้ยังไม่ได้รับสิทธิ์เข้าถึงข้อมูล');
         alert('บัญชีนี้เข้าสู่ระบบได้ แต่สิทธิ์เข้าถึงข้อมูลถูกถอนไปแล้ว\n\n' +
-              'กรุณาแจ้งผู้ดูแลระบบให้เพิ่ม User UID นี้ไว้ใต้ allowlist ในฐานข้อมูล:\n' + user.uid);
+              'กรุณาแจ้งผู้ดูแลระบบให้เพิ่ม User UID นี้ไว้ใต้ allowed ในฐานข้อมูล:\n' + user.uid);
       });
     } catch (e) {
       setCloudChip('err', '⚠ เชื่อมต่อคลาวด์ไม่สำเร็จ');
@@ -2694,7 +2694,7 @@ window.onFirebaseReady = function (api) {
 };
 
 /* ========== PWA: install, update & offline ========== */
-const APP_VERSION = '2.0.1 (10 ก.ย. 2569)';
+const APP_VERSION = '2.0.2 (10 ก.ย. 2569)';
 let deferredInstall = null;
 let swRegistration = null;
 let reloadingForUpdate = false;
