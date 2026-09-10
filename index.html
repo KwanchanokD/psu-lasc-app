@@ -356,31 +356,40 @@
     <p style="font-size:12px;color:var(--muted);text-align:center;margin:6px 0 2px">
       (แนะนำ — ไม่ต้องจำรหัสผ่านเพิ่ม)
     </p>
-    <div style="display:flex;align-items:center;gap:10px;margin:14px 0 10px;color:var(--muted);font-size:12px">
-      <span style="flex:1;height:1px;background:#e0e0e0"></span>หรือใช้อีเมล + รหัสผ่าน<span style="flex:1;height:1px;background:#e0e0e0"></span>
-    </div>
-    <form onsubmit="doLogin(event)">
-      <label class="field">อีเมล
-        <input type="email" id="lg_email" required autocomplete="username" placeholder="you@psu.ac.th">
-      </label>
-      <br>
-      <label class="field">รหัสผ่าน
-        <input type="password" id="lg_pass" required autocomplete="current-password" placeholder="อย่างน้อย 6 ตัวอักษร">
-      </label>
-      <div id="lg_error" class="hidden" style="margin-top:10px;background:#fdecea;border:1px solid #f5c6cb;color:#9c0006;border-radius:8px;padding:9px 12px;font-size:13.5px"></div>
-      <div class="form-actions">
-        <button type="submit" class="btn success" id="lg_submit">🔑 เข้าสู่ระบบ</button>
-        <button type="button" class="btn secondary" onclick="document.getElementById('loginModal').classList.add('hidden')">ยกเลิก</button>
-      </div>
-    </form>
+
+    <!-- กล่องข้อความอยู่นอกฟอร์ม เพื่อให้เห็นได้ทั้งตอนใช้ Google และตอนใช้รหัสผ่าน -->
+    <div id="lg_error" class="hidden" style="margin-top:10px;background:#fdecea;border:1px solid #f5c6cb;color:#9c0006;border-radius:8px;padding:9px 12px;font-size:13.5px"></div>
     <div id="lg_reset_ok" class="hidden" style="margin-top:10px;background:#e2efda;border:1px solid #a9d08e;color:#375623;border-radius:8px;padding:9px 12px;font-size:13.5px"></div>
-    <p style="font-size:12.5px;color:var(--muted);margin-top:10px">
-      ลืมรหัสผ่าน? — กรอกอีเมลด้านบนแล้ว
-      <button type="button" id="lg_forgot" class="btn small secondary" style="margin-left:4px" onclick="doForgotPassword()">✉ ส่งลิงก์ตั้งรหัสผ่านใหม่</button>
-      <br>ลิงก์จะส่งไปที่อีเมล (ตรวจ Junk/Spam ด้วย) ใช้ได้ภายใน 1 ชั่วโมง
-      <br>ใช้ได้เฉพาะบัญชีที่ตั้งรหัสผ่านไว้ — ถ้าเข้าด้วยบัญชี Google ให้กดปุ่มด้านบนแทน
-      <br>ยังไม่มีบัญชี — ติดต่อผู้ดูแลระบบเพื่อสร้างให้ (สมัครเองไม่ได้)
+
+    <!-- ทางเลือกสำหรับเจ้าหน้าที่ที่ไม่มีบัญชี Google — ซ่อนไว้ก่อนเพื่อไม่ให้สับสน -->
+    <p style="text-align:center;margin:14px 0 0">
+      <a href="#" id="lg_toggle" onclick="togglePasswordLogin(event)"
+         style="font-size:12.5px;color:var(--muted);text-decoration:underline">ไม่มีบัญชี Google? เข้าด้วยอีเมล + รหัสผ่าน</a>
     </p>
+
+    <div id="lg_pwbox" class="hidden">
+      <form onsubmit="doLogin(event)" style="margin-top:10px">
+        <label class="field">อีเมล
+          <input type="email" id="lg_email" required autocomplete="username" placeholder="you@psu.ac.th">
+        </label>
+        <br>
+        <label class="field">รหัสผ่าน
+          <input type="password" id="lg_pass" required autocomplete="current-password" placeholder="อย่างน้อย 6 ตัวอักษร">
+        </label>
+        <div class="form-actions">
+          <button type="submit" class="btn success" id="lg_submit">🔑 เข้าสู่ระบบ</button>
+        </div>
+      </form>
+      <p style="font-size:12.5px;color:var(--muted);margin-top:4px">
+        ลืมรหัสผ่าน? — กรอกอีเมลด้านบนแล้ว
+        <button type="button" id="lg_forgot" class="btn small secondary" style="margin-left:4px" onclick="doForgotPassword()">✉ ส่งลิงก์ตั้งรหัสผ่านใหม่</button>
+        <br>ใช้ได้เฉพาะบัญชีที่ผู้ดูแลระบบตั้งรหัสผ่านไว้ให้ (ตรวจ Junk/Spam ด้วย)
+      </p>
+    </div>
+
+    <div class="form-actions" style="margin-top:14px">
+      <button type="button" class="btn secondary" onclick="document.getElementById('loginModal').classList.add('hidden')">ปิดหน้าต่าง</button>
+    </div>
   </div>
 </div>
 
@@ -2350,8 +2359,25 @@ function openLogin() {
   document.getElementById('lg_error').classList.add('hidden');
   document.getElementById('lg_reset_ok').classList.add('hidden');
   document.getElementById('lg_pass').value = '';
+  setPasswordLogin(false);                    // เริ่มที่ปุ่ม Google เสมอ
   document.getElementById('loginModal').classList.remove('hidden');
-  setTimeout(() => document.getElementById('lg_email').focus(), 50);
+  setTimeout(() => document.getElementById('lg_google').focus(), 50);
+}
+
+/* เปิด/ปิดส่วนเข้าสู่ระบบด้วยอีเมล + รหัสผ่าน (สำหรับคนที่ไม่มีบัญชี Google) */
+function setPasswordLogin(show) {
+  const box = document.getElementById('lg_pwbox');
+  const link = document.getElementById('lg_toggle');
+  box.classList.toggle('hidden', !show);
+  link.textContent = show ? 'ซ่อนการเข้าสู่ระบบด้วยอีเมล + รหัสผ่าน'
+                          : 'ไม่มีบัญชี Google? เข้าด้วยอีเมล + รหัสผ่าน';
+}
+
+function togglePasswordLogin(ev) {
+  if (ev) ev.preventDefault();
+  const show = document.getElementById('lg_pwbox').classList.contains('hidden');
+  setPasswordLogin(show);
+  if (show) setTimeout(() => document.getElementById('lg_email').focus(), 50);
 }
 
 const LOGIN_ERRORS = {
@@ -2655,7 +2681,7 @@ window.onFirebaseReady = function (api) {
 };
 
 /* ========== PWA: install, update & offline ========== */
-const APP_VERSION = '1.7.2 (10 ก.ย. 2569)';
+const APP_VERSION = '1.8.0 (10 ก.ย. 2569)';
 let deferredInstall = null;
 let swRegistration = null;
 let reloadingForUpdate = false;
