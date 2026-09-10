@@ -5,30 +5,31 @@
   //           วางทับของเดิม → กด Publish
   // ============================================================
   //
-  //  โหมด: อนุมัติเป็นรายคน
-  //  เข้าถึงข้อมูลได้ก็ต่อเมื่อ  ยืนยันอีเมลแล้ว  และ  มีชื่ออยู่ใต้โหนด allowed
-  //  ไม่มีใครเข้าได้เอง แม้จะใช้อีเมล @psu.ac.th ก็ตาม
+  //  ฐานข้อมูลนี้มีหลายระบบใช้ร่วมกัน จึงแยกสิทธิ์เป็นรายโหนด
   //
-  //  ⚠️ ก่อนกด Publish ตรวจให้แน่ใจว่า UID ของตัวเองอยู่ใต้ allowed แล้ว
+  //    data/projects   — แอปตรวจติดตามการดำเนินการต่อสัตว์ฯ
+  //                      เข้าถึงได้เฉพาะผู้ที่มีชื่อใต้โหนด allowed
+  //    data/medicine   — ระบบอื่นของศูนย์ฯ
+  //    data/quotation  — ระบบอื่นของศูนย์ฯ
+  //                      สองโหนดนี้เปิดให้ผู้ที่เข้าสู่ระบบแล้วทุกคน
+  //                      เพื่อไม่ให้ระบบเดิมสะดุด
+  //    data/updatedAt  — เวลาที่แก้ไขล่าสุด ใช้ร่วมกันหลายระบบ
   //
-  //  ── วิธีอนุมัติคนเข้าใช้งาน ────────────────────────────────
+  //  ⚠️ ถ้าหลัง Publish แล้วระบบยา/ใบเสนอราคาใช้ไม่ได้
+  //     แปลว่าระบบนั้นทำงานโดยไม่ต้องเข้าสู่ระบบ ให้แก้ "auth != null"
+  //     ของโหนดนั้นเป็น true ชั่วคราว แล้วค่อยวางแผนรัดกุมทีหลัง
+  //
+  //  ── วิธีอนุมัติคนเข้าใช้แอปสัตว์ทดลอง ─────────────────────
   //     1. ให้เขากดเข้าสู่ระบบ 1 ครั้ง หน้าจอจะขึ้น User UID พร้อมปุ่มคัดลอก
-  //        (หรือดูเองที่ Authentication → Users คอลัมน์ User UID)
-  //     2. Realtime Database → แท็บ Data → กด + ใต้โหนด allowed
+  //     2. Realtime Database → Data → กด + ใต้โหนด allowed
   //              allowed / <User UID>  :  true
   //     3. ให้เขากดเข้าสู่ระบบอีกครั้ง — เข้าได้ทันที
   //
   //  ── วิธีถอนสิทธิ์ ────────────────────────────────────────
-  //     ลบโหนดของคนนั้นใต้ allowed  (มีผลทันทีทุกเครื่อง)
-  //     ห้ามแก้ค่าเป็น false เฉย ๆ ให้ลบทิ้งไปเลย จะชัดเจนกว่า
-  //
-  //  ── ถ้าภายหลังอยากให้ทุกคนใน @psu.ac.th เข้าได้เอง ──────────
-  //     เติมต่อท้ายเงื่อนไข .read และ .write ให้เหมือนกันทั้งคู่:
-  //        || auth.token.email.toLowerCase().endsWith('@psu.ac.th')
+  //     ลบโหนดของคนนั้นใต้ allowed (มีผลทันทีทุกเครื่อง)
   //
   // ============================================================
   "rules": {
-    // ปิดทุกอย่างที่ไม่ได้ระบุไว้อย่างชัดเจน
     ".read": false,
     ".write": false,
 
@@ -36,24 +37,39 @@
       // แก้ไขได้จาก Firebase Console เท่านั้น หน้าเว็บเขียนไม่ได้
       ".write": false,
       "$uid": {
-        // ให้แต่ละคนอ่านสถานะอนุมัติของตัวเองได้ เพื่อให้แอปบอกได้ว่า
+        // ให้แต่ละคนอ่านสถานะอนุมัติของตัวเองได้ แอปจะได้บอกได้ว่า
         // "ยังไม่ได้รับอนุมัติ" แทนที่จะขึ้น permission denied ลอย ๆ
         ".read": "auth != null && auth.uid == $uid"
       }
     },
 
     "data": {
-      ".read":  "auth != null && auth.token.email_verified == true && root.child('allowed').child(auth.uid).exists() && root.child('allowed').child(auth.uid).val() != false",
-      ".write": "auth != null && auth.token.email_verified == true && root.child('allowed').child(auth.uid).exists() && root.child('allowed').child(auth.uid).val() != false",
+      // ไม่ให้สิทธิ์แบบเหมารวมที่ระดับ data — แจกทีละโหนดด้านล่าง
+      ".read": false,
+      ".write": false,
 
       "projects": {
+        ".read":  "auth != null && auth.token.email_verified == true && root.child('allowed').child(auth.uid).exists() && root.child('allowed').child(auth.uid).val() != false",
+        ".write": "auth != null && auth.token.email_verified == true && root.child('allowed').child(auth.uid).exists() && root.child('allowed').child(auth.uid).val() != false",
         "$projectId": {
-          // ข้อมูลโครงการต้องเป็นอ็อบเจกต์ที่มี id ตรงกับคีย์ (กันข้อมูลผิดรูปแบบ)
+          // ข้อมูลโครงการต้องมี id ตรงกับคีย์ (กันข้อมูลผิดรูปแบบ)
           ".validate": "newData.hasChild('id') && newData.child('id').val() == $projectId"
         }
       },
 
+      "medicine": {
+        ".read":  "auth != null",
+        ".write": "auth != null"
+      },
+
+      "quotation": {
+        ".read":  "auth != null",
+        ".write": "auth != null"
+      },
+
       "updatedAt": {
+        ".read":  "auth != null",
+        ".write": "auth != null",
         ".validate": "newData.isString()"
       }
     }
