@@ -6,25 +6,21 @@
   // ============================================================
   //
   //  โหมด: อนุมัติเป็นรายคน
-  //  เข้าถึงข้อมูลได้ก็ต่อเมื่อ  ยืนยันอีเมลแล้ว  และ  มีชื่ออยู่ใน allowlist
-  //  ไม่มีใครเข้าได้โดยอัตโนมัติ แม้จะใช้อีเมล @psu.ac.th ก็ตาม
+  //  เข้าถึงข้อมูลได้ก็ต่อเมื่อ  ยืนยันอีเมลแล้ว  และ  มีชื่ออยู่ใต้โหนด allowed
+  //  ไม่มีใครเข้าได้เอง แม้จะใช้อีเมล @psu.ac.th ก็ตาม
   //
-  //  ⚠️⚠️ ก่อนกด Publish ต้องใส่ UID ของตัวเองลง allowlist ก่อน ⚠️⚠️
-  //       ไม่อย่างนั้นคุณจะเข้าถึงข้อมูลของตัวเองไม่ได้
-  //       (ยังแก้ได้เสมอจากคอนโซล แต่เสียเวลาโดยใช่เหตุ)
+  //  ⚠️ ก่อนกด Publish ตรวจให้แน่ใจว่า UID ของตัวเองอยู่ใต้ allowed แล้ว
   //
   //  ── วิธีอนุมัติคนเข้าใช้งาน ────────────────────────────────
-  //     1. ให้เขากดเข้าสู่ระบบ 1 ครั้ง หน้าจอจะขึ้นรหัส User UID
-  //        พร้อมปุ่มคัดลอก ให้เขาส่งรหัสนั้นมาให้คุณ
-  //        (หรือคุณดูเองที่ Authentication → Users คอลัมน์ User UID)
-  //     2. Realtime Database → แท็บ Data → กด + เพิ่มข้อมูล
-  //              allowlist / <User UID ที่ได้มา>  :  true
-  //        ค่าต้องเป็น true แบบ boolean ไม่ใช่ข้อความ "true"
-  //     3. ให้เขากดเข้าสู่ระบบอีกครั้ง — เข้าได้ทันที ไม่ต้องรอ
+  //     1. ให้เขากดเข้าสู่ระบบ 1 ครั้ง หน้าจอจะขึ้น User UID พร้อมปุ่มคัดลอก
+  //        (หรือดูเองที่ Authentication → Users คอลัมน์ User UID)
+  //     2. Realtime Database → แท็บ Data → กด + ใต้โหนด allowed
+  //              allowed / <User UID>  :  true
+  //     3. ให้เขากดเข้าสู่ระบบอีกครั้ง — เข้าได้ทันที
   //
   //  ── วิธีถอนสิทธิ์ ────────────────────────────────────────
-  //     ลบโหนดของคนนั้นใต้ allowlist — มีผลทันทีทุกเครื่อง
-  //     ถ้าต้องการปิดบัญชีถาวร: Authentication → Users → ⋮ → Disable
+  //     ลบโหนดของคนนั้นใต้ allowed  (มีผลทันทีทุกเครื่อง)
+  //     ห้ามแก้ค่าเป็น false เฉย ๆ ให้ลบทิ้งไปเลย จะชัดเจนกว่า
   //
   //  ── ถ้าภายหลังอยากให้ทุกคนใน @psu.ac.th เข้าได้เอง ──────────
   //     เติมต่อท้ายเงื่อนไข .read และ .write ให้เหมือนกันทั้งคู่:
@@ -36,20 +32,19 @@
     ".read": false,
     ".write": false,
 
-    "allowlist": {
+    "allowed": {
       // แก้ไขได้จาก Firebase Console เท่านั้น หน้าเว็บเขียนไม่ได้
       ".write": false,
       "$uid": {
         // ให้แต่ละคนอ่านสถานะอนุมัติของตัวเองได้ เพื่อให้แอปบอกได้ว่า
         // "ยังไม่ได้รับอนุมัติ" แทนที่จะขึ้น permission denied ลอย ๆ
-        ".read": "auth != null && auth.uid == $uid",
-        ".validate": "newData.isBoolean()"
+        ".read": "auth != null && auth.uid == $uid"
       }
     },
 
     "data": {
-      ".read":  "auth != null && auth.token.email_verified == true && root.child('allowlist').child(auth.uid).val() == true",
-      ".write": "auth != null && auth.token.email_verified == true && root.child('allowlist').child(auth.uid).val() == true",
+      ".read":  "auth != null && auth.token.email_verified == true && root.child('allowed').child(auth.uid).exists() && root.child('allowed').child(auth.uid).val() != false",
+      ".write": "auth != null && auth.token.email_verified == true && root.child('allowed').child(auth.uid).exists() && root.child('allowed').child(auth.uid).val() != false",
 
       "projects": {
         "$projectId": {
