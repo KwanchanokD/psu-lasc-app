@@ -346,7 +346,7 @@
     <h3 style="color:var(--primary-dark);text-align:center;margin-bottom:4px">เข้าสู่ระบบ</h3>
     <p style="font-size:13px;color:var(--muted);text-align:center;margin-bottom:16px">
       เข้าสู่ระบบเพื่อให้ข้อมูลซิงก์ทุกเครื่อง<br>
-      <b id="lg_domain_note">เฉพาะอีเมล @psu.ac.th เท่านั้น</b>
+      <b id="lg_domain_note">เฉพาะผู้ที่ผู้ดูแลระบบอนุมัติแล้วเท่านั้น</b>
     </p>
     <button type="button" id="lg_google" class="btn" onclick="doGoogleLogin()"
             style="width:100%;background:#fff;color:#3c4043;border:1px solid #dadce0;font-weight:600">
@@ -2390,7 +2390,6 @@ const LOGIN_ERRORS = {
   'auth/network-request-failed': 'เชื่อมต่ออินเทอร์เน็ตไม่ได้ กรุณาตรวจสอบสัญญาณ',
   'auth/missing-email': 'กรุณากรอกอีเมลก่อน',
   'auth/operation-not-allowed': 'ผู้ดูแลระบบยังไม่ได้เปิดวิธีเข้าสู่ระบบนี้ใน Firebase',
-  'app/domain-not-allowed': 'ระบบนี้ใช้ได้เฉพาะอีเมล @psu.ac.th เท่านั้น'
 };
 
 const GOOGLE_LOGIN_ERRORS = {
@@ -2407,11 +2406,7 @@ async function doLogin(ev) {
   btn.disabled = true; btn.textContent = 'กำลังเข้าสู่ระบบ…';
   errBox.classList.add('hidden');
   try {
-    const email = lg_email.value.trim();
-    if (!isAllowedEmail(email)) {
-      throw { code: 'app/domain-not-allowed' };
-    }
-    await fb.signIn(fb.auth, email, lg_pass.value);
+    await fb.signIn(fb.auth, lg_email.value.trim(), lg_pass.value);
     document.getElementById('loginModal').classList.add('hidden');
   } catch (e) {
     let msg = LOGIN_ERRORS[e.code];
@@ -2427,51 +2422,32 @@ async function doLogin(ev) {
   }
 }
 
-/* ===== นโยบายบัญชี: ใครเข้าระบบได้บ้าง =====
-   ★ จุดเดียวที่ต้องแก้เวลาจะเพิ่มคนเข้าระบบ ★
+/* ===== นโยบายบัญชี: ต้องได้รับอนุมัติเป็นรายคน =====
+   ผู้ดูแลระบบอนุมัติที่ Firebase Console → Realtime Database → Data
+   โดยสร้างข้อมูล   allowlist / <User UID> : true
+   ถอนสิทธิ์ = ลบโหนดนั้นทิ้ง (มีผลทันทีในทุกเครื่อง)
+   กฎที่บังคับใช้จริงอยู่ในไฟล์ database.rules.json */
 
-   1) เพิ่มทั้งโดเมน  — ใส่ชื่อโดเมนใน ALLOWED_EMAIL_DOMAINS
-                        เช่น 'email.psu.ac.th' (อีเมลนักศึกษา)
-   2) เพิ่มเป็นรายคน  — ใส่อีเมลเต็มใน ALLOWED_EXTRA_EMAILS
-                        ใช้กับคนนอกโดเมน เช่น ลูกจ้างที่ใช้ Gmail
-
-   สำคัญ: แก้ที่นี่อย่างเดียวไม่พอ ต้องแก้ database.rules.json ให้ตรงกันด้วย
-   เพราะกฎฝั่งเซิร์ฟเวอร์คือด่านที่บังคับใช้จริง (ดูวิธีในไฟล์นั้น) */
-const ALLOWED_EMAIL_DOMAINS = ['psu.ac.th'];
-const ALLOWED_EXTRA_EMAILS  = [];
-
-function isAllowedEmail(email) {
-  if (!email) return false;
-  const e = email.toLowerCase().trim();
-  if (ALLOWED_EXTRA_EMAILS.some(x => String(x).toLowerCase().trim() === e)) return true;
-  return ALLOWED_EMAIL_DOMAINS.some(d => e.endsWith('@' + String(d).toLowerCase().trim()));
-}
-
-/* ข้อความบอกผู้ใช้ว่าระบบรับอีเมลแบบไหนบ้าง */
-function allowedEmailLabel() {
-  const parts = ALLOWED_EMAIL_DOMAINS.map(d => '@' + d).concat(ALLOWED_EXTRA_EMAILS);
-  return parts.join(' หรือ ');
-}
-
-/* แสดงข้อความปฏิเสธในหน้าต่างเข้าสู่ระบบ (เปิดหน้าต่างให้ถ้ายังปิดอยู่) */
-function showLoginError(msg) {
+/* แสดงข้อความในหน้าต่างเข้าสู่ระบบ (เปิดหน้าต่างให้ถ้ายังปิดอยู่) */
+function showLoginError(msg, html) {
   const modal  = document.getElementById('loginModal');
   const errBox = document.getElementById('lg_error');
   document.getElementById('lg_reset_ok').classList.add('hidden');
   modal.classList.remove('hidden');
-  errBox.textContent = msg;
+  if (html) errBox.innerHTML = msg; else errBox.textContent = msg;
   errBox.classList.remove('hidden');
+}
+
+/* คัดลอก User UID ไปให้ผู้ดูแลระบบได้ในคลิกเดียว */
+function copyUid(uid) {
+  navigator.clipboard.writeText(uid)
+    .then(() => toast('คัดลอก User UID แล้ว — ส่งให้ผู้ดูแลระบบได้เลย'))
+    .catch(() => prompt('คัดลอกรหัสนี้ส่งให้ผู้ดูแลระบบ:', uid));
 }
 
 /* ตรวจสิทธิ์หลังเข้าสู่ระบบ — ถ้าไม่ผ่านให้ออกจากระบบทันที
    คืนค่า true = ผ่าน, false = ถูกปฏิเสธ (จัดการข้อความให้แล้ว) */
 async function enforceAccountPolicy(user) {
-  if (!isAllowedEmail(user.email)) {
-    await fb.signOut(fb.auth);
-    showLoginError('บัญชี ' + (user.email || '') + ' ไม่ได้รับอนุญาตให้ใช้ระบบนี้ — ' +
-                   'ใช้ได้เฉพาะอีเมล ' + allowedEmailLabel() + ' เท่านั้น');
-    return false;
-  }
   if (!user.emailVerified) {
     let sent = false;
     try { await fb.sendEmailVerification(user); sent = true; } catch (e) {}
@@ -2479,6 +2455,24 @@ async function enforceAccountPolicy(user) {
     showLoginError('อีเมล ' + user.email + ' ยังไม่ได้ยืนยัน' +
       (sent ? ' — เราส่งลิงก์ยืนยันไปให้แล้ว กรุณาเปิดอีเมล (ดูใน Junk/Spam ด้วย) กดลิงก์ยืนยัน แล้วเข้าสู่ระบบอีกครั้ง'
             : ' — กรุณาติดต่อผู้ดูแลระบบเพื่อยืนยันอีเมลให้'));
+    return false;
+  }
+
+  let approved = false;
+  try {
+    const snap = await fb.get(fb.ref(fb.rtdb, 'allowlist/' + user.uid));
+    approved = snap.exists() && snap.val() === true;
+  } catch (e) { approved = false; }
+
+  if (!approved) {
+    const uid = user.uid, email = user.email || '';
+    await fb.signOut(fb.auth);
+    showLoginError(
+      '⛔ บัญชี <b>' + email + '</b> ยังไม่ได้รับอนุมัติให้เข้าถึงข้อมูล' +
+      '<br><br>กรุณาส่งรหัสนี้ให้ผู้ดูแลระบบเพื่อขออนุมัติ:' +
+      '<br><code style="display:inline-block;margin-top:4px;padding:4px 8px;background:#fff;border:1px solid #f5c6cb;border-radius:6px;font-size:12px;word-break:break-all">' + uid + '</code>' +
+      '<br><button type="button" class="btn small secondary" style="margin-top:8px" onclick="copyUid(\'' + uid + '\')">📋 คัดลอกรหัส</button>',
+      true);
     return false;
   }
   return true;
@@ -2539,11 +2533,7 @@ async function doForgotPassword() {
     document.getElementById('lg_email').focus();
     return;
   }
-  if (!isAllowedEmail(email)) {
-    errBox.textContent = 'ระบบนี้ใช้ได้เฉพาะอีเมล ' + allowedEmailLabel() + ' เท่านั้น';
-    errBox.classList.remove('hidden');
-    return;
-  }
+
 
   btn.disabled = true; btn.textContent = 'กำลังส่ง…';
   try {
@@ -2691,7 +2681,8 @@ window.onFirebaseReady = function (api) {
         }
       }, () => {
         setCloudChip('err', '⚠ บัญชีนี้ยังไม่ได้รับสิทธิ์เข้าถึงข้อมูล');
-        alert('บัญชีนี้เข้าสู่ระบบได้ แต่ยังไม่ได้รับสิทธิ์เข้าถึงข้อมูล\n\nกรุณาแจ้งผู้ดูแลระบบให้เพิ่ม User UID ของคุณไว้ใต้ allowed ในฐานข้อมูล');
+        alert('บัญชีนี้เข้าสู่ระบบได้ แต่สิทธิ์เข้าถึงข้อมูลถูกถอนไปแล้ว\n\n' +
+              'กรุณาแจ้งผู้ดูแลระบบให้เพิ่ม User UID นี้ไว้ใต้ allowlist ในฐานข้อมูล:\n' + user.uid);
       });
     } catch (e) {
       setCloudChip('err', '⚠ เชื่อมต่อคลาวด์ไม่สำเร็จ');
@@ -2700,7 +2691,7 @@ window.onFirebaseReady = function (api) {
 };
 
 /* ========== PWA: install, update & offline ========== */
-const APP_VERSION = '1.9.0 (10 ก.ย. 2569)';
+const APP_VERSION = '2.0.0 (10 ก.ย. 2569)';
 let deferredInstall = null;
 let swRegistration = null;
 let reloadingForUpdate = false;
@@ -2776,7 +2767,7 @@ async function installApp() {
 /* ========== Init ========== */
 document.getElementById('headerLogo').innerHTML = logoIMG(50);
 document.getElementById('loginLogo').innerHTML = logoIMG(70);
-document.getElementById('lg_domain_note').textContent = 'เฉพาะอีเมล ' + allowedEmailLabel() + ' เท่านั้น';
+document.getElementById('lg_domain_note').textContent = 'เฉพาะผู้ที่ผู้ดูแลระบบอนุมัติแล้วเท่านั้น';
 renderDailyChecklist();
 load();
 renderList();
@@ -2814,14 +2805,7 @@ checkStoredHandle();
       sendPasswordReset: authMod.sendPasswordResetEmail,
       googleProvider: (() => {
         const gp = new authMod.GoogleAuthProvider();
-        const params = { prompt: 'select_account' };
-        // ถ้าอนุญาตโดเมนเดียวล้วน ๆ ให้ Google กรองบัญชีให้ตั้งแต่หน้าเลือกบัญชี
-        try {
-          if (ALLOWED_EMAIL_DOMAINS.length === 1 && ALLOWED_EXTRA_EMAILS.length === 0) {
-            params.hd = ALLOWED_EMAIL_DOMAINS[0];
-          }
-        } catch (e) {}
-        gp.setCustomParameters(params);
+        gp.setCustomParameters({ prompt: 'select_account' });
         return gp;
       })(),
       sendEmailVerification: authMod.sendEmailVerification,
