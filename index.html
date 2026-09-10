@@ -2510,8 +2510,10 @@ async function doForgotPassword() {
         await fb.sendPasswordReset(fb.auth, email);
       } else { throw e1; }
     }
-    okBox.innerHTML = '✅ ส่งลิงก์ตั้งรหัสผ่านใหม่ไปที่ <b>' + email + '</b> แล้ว' +
-      '<br>เปิดอีเมล (ถ้าไม่เจอให้ดูใน Junk/Spam) กดลิงก์เพื่อตั้งรหัสผ่านใหม่ แล้วกลับมาเข้าสู่ระบบอีกครั้ง';
+    okBox.innerHTML = '📨 ถ้า <b>' + email + '</b> เป็นบัญชีที่ <u>ตั้งรหัสผ่านไว้</u> ลิงก์จะถูกส่งไปให้ภายใน 2–5 นาที ' +
+      '(ดูใน Junk/Spam ด้วย)' +
+      '<br><br>⚠ <b>ถ้าไม่ได้รับอีเมล</b> แปลว่าบัญชีนี้ไม่มีรหัสผ่าน — ส่วนใหญ่คือบัญชีที่เข้าระบบด้วย Google ' +
+      'กรุณากดปุ่ม <b>「เข้าสู่ระบบด้วยบัญชี Google」</b> ด้านบนแทน';
     okBox.classList.remove('hidden');
   } catch (e) {
     errBox.textContent = LOGIN_ERRORS[e.code] ||
@@ -2653,7 +2655,7 @@ window.onFirebaseReady = function (api) {
 };
 
 /* ========== PWA: install, update & offline ========== */
-const APP_VERSION = '1.7.1 (10 ก.ย. 2569)';
+const APP_VERSION = '1.7.2 (10 ก.ย. 2569)';
 let deferredInstall = null;
 let swRegistration = null;
 let reloadingForUpdate = false;
