@@ -1,20 +1,51 @@
 {
-  // กฎความปลอดภัยของ Realtime Database — โปรเจกต์ psu-lasc-animal
-  // อนุญาตเฉพาะผู้ที่เข้าสู่ระบบด้วยอีเมล @psu.ac.th ที่ยืนยันอีเมลแล้วเท่านั้น
+  // ============================================================
+  //  กฎความปลอดภัยของ Realtime Database — โปรเจกต์ psu-lasc-animal
+  //  ติดตั้ง: Firebase Console → Realtime Database → แท็บ Rules
+  //           วางทับของเดิม → กด Publish
+  // ============================================================
   //
-  // วิธีติดตั้ง: Firebase Console → Realtime Database → แท็บ Rules
-  //             วางเนื้อหาไฟล์นี้ทับของเดิม แล้วกด Publish
+  //  เข้าถึงข้อมูลได้เมื่อ  ยืนยันอีเมลแล้ว  และ  (อยู่ในโดเมนที่อนุญาต
+  //  หรือ  ถูกเพิ่มชื่อไว้ใน allowlist)
   //
-  // หมายเหตุ: การตรวจสอบฝั่งหน้าเว็บ (index.html) เป็นแค่ความสะดวกของผู้ใช้
-  //           กฎในไฟล์นี้คือด่านที่บังคับใช้จริง เพราะทำงานบนเซิร์ฟเวอร์ของ Firebase
+  //  ── วิธีเพิ่มคนเข้าระบบ ────────────────────────────────────
+  //
+  //  แบบที่ 1 — คนที่มีอีเมล @psu.ac.th
+  //     ไม่ต้องทำอะไรเลย ให้เขากดปุ่ม "เข้าสู่ระบบด้วยบัญชี Google"
+  //     Firebase จะสร้างบัญชีให้อัตโนมัติเมื่อเข้าครั้งแรก
+  //
+  //  แบบที่ 2 — คนนอกโดเมน (เช่น ลูกจ้างที่ใช้ Gmail)
+  //     2.1 ให้เขาลองเข้าสู่ระบบ 1 ครั้งเพื่อให้ Firebase สร้างบัญชี
+  //         (จะยังเข้าไม่ได้ ถือว่าปกติ) แล้วไปคัดลอก User UID จาก
+  //         Authentication → Users
+  //     2.2 Realtime Database → Data → สร้างข้อมูลตามนี้
+  //             allowlist / <User UID ที่คัดลอกมา> : true
+  //     2.3 แก้ไฟล์ index.html ที่ ALLOWED_EXTRA_EMAILS ให้ใส่อีเมลนั้นด้วย
+  //         มิฉะนั้นหน้าเว็บจะปฏิเสธตั้งแต่ยังไม่ส่งคำขอถึงเซิร์ฟเวอร์
+  //
+  //  แบบที่ 3 — เพิ่มทั้งโดเมน (เช่น อีเมลนักศึกษา @email.psu.ac.th)
+  //     เติมเงื่อนไข OR ต่อท้ายบรรทัด .read และ .write ให้เหมือนกันทั้งคู่:
+  //        || auth.token.email.toLowerCase().endsWith('@email.psu.ac.th')
+  //     แล้วเติมโดเมนนั้นใน ALLOWED_EMAIL_DOMAINS ของ index.html ด้วย
+  //
+  //  ── วิธีถอนสิทธิ์ ────────────────────────────────────────
+  //     ลบโหนดใต้ allowlist ของคนนั้น หรือปิด/ลบบัญชีที่
+  //     Authentication → Users → ⋮ → Disable / Delete account
+  //
+  //  ── ถ้าต้องการคุมเป็นรายคนทั้งหมด (ไม่ให้ทุกคนใน @psu.ac.th เข้าได้) ──
+  //     ลบเงื่อนไข endsWith('@psu.ac.th') ออก ให้เหลือแค่ allowlist
+  //     ⚠ ก่อนทำ ต้องใส่ UID ของตัวเองลง allowlist ก่อน ไม่งั้นจะเข้าไม่ได้
+  //
+  // ============================================================
   "rules": {
-    // ปิดทุกอย่างที่ไม่ได้ระบุไว้อย่างชัดเจน
+    // ปิดทุกอย่างที่ไม่ได้ระบุไว้อย่างชัดเจน (รวมถึงโหนด allowlist
+    // ที่แก้ไขได้จากคอนโซลเท่านั้น หน้าเว็บอ่าน/เขียนไม่ได้)
     ".read": false,
     ".write": false,
 
     "data": {
-      ".read":  "auth != null && auth.token.email_verified == true && auth.token.email.toLowerCase().endsWith('@psu.ac.th')",
-      ".write": "auth != null && auth.token.email_verified == true && auth.token.email.toLowerCase().endsWith('@psu.ac.th')",
+      ".read":  "auth != null && auth.token.email_verified == true && ( auth.token.email.toLowerCase().endsWith('@psu.ac.th') || root.child('allowlist').child(auth.uid).val() == true )",
+      ".write": "auth != null && auth.token.email_verified == true && ( auth.token.email.toLowerCase().endsWith('@psu.ac.th') || root.child('allowlist').child(auth.uid).val() == true )",
 
       "projects": {
         "$projectId": {

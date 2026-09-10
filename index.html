@@ -346,7 +346,7 @@
     <h3 style="color:var(--primary-dark);text-align:center;margin-bottom:4px">เข้าสู่ระบบ</h3>
     <p style="font-size:13px;color:var(--muted);text-align:center;margin-bottom:16px">
       เข้าสู่ระบบเพื่อให้ข้อมูลซิงก์ทุกเครื่อง<br>
-      <b>เฉพาะอีเมล @psu.ac.th เท่านั้น</b>
+      <b id="lg_domain_note">เฉพาะอีเมล @psu.ac.th เท่านั้น</b>
     </p>
     <button type="button" id="lg_google" class="btn" onclick="doGoogleLogin()"
             style="width:100%;background:#fff;color:#3c4043;border:1px solid #dadce0;font-weight:600">
@@ -2427,11 +2427,30 @@ async function doLogin(ev) {
   }
 }
 
-/* ===== นโยบายบัญชี: อนุญาตเฉพาะอีเมลของมหาวิทยาลัย ===== */
-const ALLOWED_EMAIL_DOMAIN = 'psu.ac.th';
+/* ===== นโยบายบัญชี: ใครเข้าระบบได้บ้าง =====
+   ★ จุดเดียวที่ต้องแก้เวลาจะเพิ่มคนเข้าระบบ ★
+
+   1) เพิ่มทั้งโดเมน  — ใส่ชื่อโดเมนใน ALLOWED_EMAIL_DOMAINS
+                        เช่น 'email.psu.ac.th' (อีเมลนักศึกษา)
+   2) เพิ่มเป็นรายคน  — ใส่อีเมลเต็มใน ALLOWED_EXTRA_EMAILS
+                        ใช้กับคนนอกโดเมน เช่น ลูกจ้างที่ใช้ Gmail
+
+   สำคัญ: แก้ที่นี่อย่างเดียวไม่พอ ต้องแก้ database.rules.json ให้ตรงกันด้วย
+   เพราะกฎฝั่งเซิร์ฟเวอร์คือด่านที่บังคับใช้จริง (ดูวิธีในไฟล์นั้น) */
+const ALLOWED_EMAIL_DOMAINS = ['psu.ac.th'];
+const ALLOWED_EXTRA_EMAILS  = [];
 
 function isAllowedEmail(email) {
-  return !!email && email.toLowerCase().endsWith('@' + ALLOWED_EMAIL_DOMAIN);
+  if (!email) return false;
+  const e = email.toLowerCase().trim();
+  if (ALLOWED_EXTRA_EMAILS.some(x => String(x).toLowerCase().trim() === e)) return true;
+  return ALLOWED_EMAIL_DOMAINS.some(d => e.endsWith('@' + String(d).toLowerCase().trim()));
+}
+
+/* ข้อความบอกผู้ใช้ว่าระบบรับอีเมลแบบไหนบ้าง */
+function allowedEmailLabel() {
+  const parts = ALLOWED_EMAIL_DOMAINS.map(d => '@' + d).concat(ALLOWED_EXTRA_EMAILS);
+  return parts.join(' หรือ ');
 }
 
 /* แสดงข้อความปฏิเสธในหน้าต่างเข้าสู่ระบบ (เปิดหน้าต่างให้ถ้ายังปิดอยู่) */
@@ -2450,7 +2469,7 @@ async function enforceAccountPolicy(user) {
   if (!isAllowedEmail(user.email)) {
     await fb.signOut(fb.auth);
     showLoginError('บัญชี ' + (user.email || '') + ' ไม่ได้รับอนุญาตให้ใช้ระบบนี้ — ' +
-                   'ใช้ได้เฉพาะอีเมล @' + ALLOWED_EMAIL_DOMAIN + ' เท่านั้น');
+                   'ใช้ได้เฉพาะอีเมล ' + allowedEmailLabel() + ' เท่านั้น');
     return false;
   }
   if (!user.emailVerified) {
@@ -2521,7 +2540,7 @@ async function doForgotPassword() {
     return;
   }
   if (!isAllowedEmail(email)) {
-    errBox.textContent = 'ระบบนี้ใช้ได้เฉพาะอีเมล @' + ALLOWED_EMAIL_DOMAIN + ' เท่านั้น';
+    errBox.textContent = 'ระบบนี้ใช้ได้เฉพาะอีเมล ' + allowedEmailLabel() + ' เท่านั้น';
     errBox.classList.remove('hidden');
     return;
   }
@@ -2681,7 +2700,7 @@ window.onFirebaseReady = function (api) {
 };
 
 /* ========== PWA: install, update & offline ========== */
-const APP_VERSION = '1.8.0 (10 ก.ย. 2569)';
+const APP_VERSION = '1.9.0 (10 ก.ย. 2569)';
 let deferredInstall = null;
 let swRegistration = null;
 let reloadingForUpdate = false;
@@ -2757,6 +2776,7 @@ async function installApp() {
 /* ========== Init ========== */
 document.getElementById('headerLogo').innerHTML = logoIMG(50);
 document.getElementById('loginLogo').innerHTML = logoIMG(70);
+document.getElementById('lg_domain_note').textContent = 'เฉพาะอีเมล ' + allowedEmailLabel() + ' เท่านั้น';
 renderDailyChecklist();
 load();
 renderList();
@@ -2794,8 +2814,14 @@ checkStoredHandle();
       sendPasswordReset: authMod.sendPasswordResetEmail,
       googleProvider: (() => {
         const gp = new authMod.GoogleAuthProvider();
-        // แสดงเฉพาะบัญชีของโดเมนมหาวิทยาลัยในหน้าจอเลือกบัญชีของ Google
-        gp.setCustomParameters({ hd: 'psu.ac.th', prompt: 'select_account' });
+        const params = { prompt: 'select_account' };
+        // ถ้าอนุญาตโดเมนเดียวล้วน ๆ ให้ Google กรองบัญชีให้ตั้งแต่หน้าเลือกบัญชี
+        try {
+          if (ALLOWED_EMAIL_DOMAINS.length === 1 && ALLOWED_EXTRA_EMAILS.length === 0) {
+            params.hd = ALLOWED_EMAIL_DOMAINS[0];
+          }
+        } catch (e) {}
+        gp.setCustomParameters(params);
         return gp;
       })(),
       sendEmailVerification: authMod.sendEmailVerification,
